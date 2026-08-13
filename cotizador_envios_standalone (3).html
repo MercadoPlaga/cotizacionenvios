@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cotizador de envíos — Blue Express · Starken · L&amp;G Solutions</title>
+<style>
+  :root{
+    --kraft:#e4d9c4;
+    --kraft-dark:#c9b990;
+    --ink:#1f2a24;
+    --ink-soft:#4b5a4f;
+    --paper:#faf7ef;
+    --stamp:#8a1f2b;
+    --stamp-soft:#b5453f;
+    --line:#c9b990;
+    --ok:#2f6d4f;
+    --mono: 'Courier New', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --serif: Georgia, 'Iowan Old Style', serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--kraft); color:var(--ink);
+    font-family: var(--mono);
+    font-size:14px;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.015) 0px, rgba(0,0,0,0.015) 1px, transparent 1px, transparent 3px);
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:18px 16px 60px;}
+  header.manifest{
+    border:2px solid var(--ink); background:var(--paper);
+    padding:16px 18px; margin-bottom:16px; position:relative;
+    box-shadow: 4px 4px 0 rgba(31,42,36,0.15);
+  }
+  header.manifest::before{
+    content:"GUÍA DE DESPACHO";
+    position:absolute; top:-11px; left:16px; background:var(--paper);
+    padding:0 8px; font-size:10px; letter-spacing:.14em; color:var(--ink-soft);
+  }
+  h1{
+    font-family: var(--serif); font-size:26px; margin:6px 0 4px; letter-spacing:.01em;
+  }
+  .sub{color:var(--ink-soft); font-size:12.5px; line-height:1.5; max-width:640px;}
+  .stamp{
+    position:absolute; top:14px; right:16px; border:2px solid var(--stamp); color:var(--stamp);
+    padding:6px 10px; font-size:11px; letter-spacing:.08em; transform:rotate(-4deg);
+    font-weight:bold; border-radius:2px; opacity:.85;
+  }
+  section.card{
+    border:1.5px solid var(--ink); background:var(--paper);
+    padding:16px 18px; margin-bottom:14px;
+  }
+  .card-title{
+    display:flex; align-items:baseline; gap:10px; margin-bottom:12px;
+    border-bottom:1px dashed var(--line); padding-bottom:8px;
+  }
+  .card-num{
+    font-family:var(--serif); font-weight:bold; font-size:20px; color:var(--stamp);
+  }
+  .card-title h2{font-family:var(--serif); font-size:17px; margin:0;}
+  .card-title .hint{margin-left:auto; font-size:11px; color:var(--ink-soft);}
+  label{display:block; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:4px;}
+  input[type=text], input[type=number], input[type=file], select{
+    width:100%; padding:8px 9px; border:1.5px solid var(--ink); background:#fff;
+    font-family:var(--mono); font-size:13.5px; color:var(--ink);
+  }
+  input:focus, select:focus{outline:2px solid var(--stamp-soft); outline-offset:1px;}
+  .row{display:flex; gap:10px; flex-wrap:wrap;}
+  .row > div{flex:1; min-width:120px; margin-bottom:10px;}
+  button{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:.03em; text-transform:uppercase;
+    padding:9px 14px; border:1.5px solid var(--ink); background:var(--ink); color:var(--paper);
+    cursor:pointer; transition:transform .08s ease;
+  }
+  button:hover{transform:translateY(-1px);}
+  button:active{transform:translateY(0);}
+  button.secondary{background:transparent; color:var(--ink);}
+  button.tiny{padding:4px 8px; font-size:11px;}
+  button:disabled{opacity:.5; cursor:not-allowed; transform:none;}
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th, td{padding:6px 7px; border-bottom:1px solid var(--line); text-align:left; vertical-align:middle;}
+  th{font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); border-bottom:1.5px solid var(--ink);}
+  tr.selected{background:#eef4ee;}
+  .qty-input{width:54px; padding:4px; text-align:center;}
+  .muted{color:var(--ink-soft); font-size:11.5px;}
+  .err{color:var(--stamp); font-size:11.5px; margin-top:4px;}
+  .pill{
+    display:inline-block; font-size:10px; padding:2px 7px; border:1px solid var(--ink-soft);
+    border-radius:10px; color:var(--ink-soft); margin-left:6px;
+  }
+  #comunaResults, #prodResults{
+    border:1.5px solid var(--ink); background:#fff; max-height:200px; overflow:auto;
+    display:none; position:relative; z-index:5;
+  }
+  #comunaResults div, #prodResults div{padding:6px 9px; cursor:pointer; font-size:12.5px; border-bottom:1px solid #eee;}
+  #comunaResults div:hover, #prodResults div:hover{background:var(--kraft);}
+  .selectedComuna{
+    margin-top:8px; padding:8px 10px; background:#eef4ee; border:1px solid var(--ok);
+    font-size:12.5px; display:none;
+  }
+  .results-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
+  @media (max-width:760px){ .results-grid{grid-template-columns:1fr;} }
+  .courier-card{
+    border:1.5px solid var(--ink); background:#fff; padding:12px 13px; position:relative;
+  }
+  .courier-card.winner{border-color:var(--ok); box-shadow:0 0 0 2px rgba(47,109,79,.25);}
+  .courier-card.winner::after{
+    content:"MÁS BARATO"; position:absolute; top:-9px; right:10px; background:var(--ok); color:#fff;
+    font-size:9.5px; padding:2px 8px; letter-spacing:.06em;
+  }
+  .courier-name{font-family:var(--serif); font-size:16px; font-weight:bold; margin-bottom:2px;}
+  .courier-modo{font-size:11px; color:var(--ink-soft); margin-bottom:8px;}
+  .courier-price{font-size:24px; font-weight:bold; letter-spacing:-.02em;}
+  .courier-note{font-size:10.5px; color:var(--ink-soft); margin-top:6px; line-height:1.4;}
+  .toggle-row{display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--ink-soft); margin-top:10px;}
+  .divider-label{
+    font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft);
+    margin:14px 0 6px; border-top:1px dashed var(--line); padding-top:8px;
+  }
+  details summary{cursor:pointer; font-size:12px; color:var(--ink-soft); margin-top:6px;}
+  .rate-table input{width:88px; padding:3px 5px; font-size:11.5px;}
+  footer{text-align:center; font-size:10.5px; color:var(--ink-soft); margin-top:20px;}
+  .highlight-field{
+    background:#fff3cd; border:1.5px solid #b58a1f; padding:8px 9px; border-radius:2px;
+  }
+  .highlight-field label{color:#7a5c10;}
+  .highlight-field .sublabel{font-size:10px; color:#8a6a15; margin-top:-2px; margin-bottom:5px; text-transform:none;}
+  .filelabel{
+    display:inline-block; padding:9px 14px; border:1.5px dashed var(--ink-soft); background:#fff;
+    font-size:12px; cursor:pointer; color:var(--ink-soft);
+  }
+  .filelabel:hover{border-color:var(--ink); color:var(--ink);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="manifest">
+    <div class="stamp">SANTIAGO · ORIGEN</div>
+    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAFoAWgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD7LooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiig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" alt="Mercado Plaga" style="height:56px; display:block; margin-bottom:10px;">
+    <h1>Cotizador de envíos nacionales</h1>
+    <div class="sub">Compara el costo de despacho de tu pedido entre Blue Express, Starken y L&amp;G Solutions.
+    Los tres tarifarios asumen despacho con origen en Santiago hacia cualquier comuna de Chile. Herramienta interna — funciona completa en tu navegador, sin conexión a ningún servidor.</div>
+  </header>
+  <div class="muted" style="text-align:center; margin:-6px 0 16px; font-size:11.5px;">Ante cualquier duda con la calculadora, contactar a <b>Felipe Parra</b>.</div>
+
+  <section class="card">
+    <div class="card-title">
+      <span class="card-num">01</span>
+      <h2>Productos del pedido</h2>
+      <span class="hint">desde un CSV exportado de Shopify</span>
+    </div>
+    <div class="row">
+      <div style="flex:2;">
+        <label class="filelabel" for="csvInput">Importar CSV de productos de Shopify</label>
+        <input type="file" id="csvInput" accept=".csv" style="display:none;">
+        <span id="csvStatus" class="muted" style="margin-left:8px;"></span>
+      </div>
+    </div>
+    <div class="muted" style="margin-top:6px;">Catálogo precargado desde tu tienda (225 productos activos). Puedes volver a importar un CSV cuando tu catálogo cambie.</div>
+
+    <div class="divider-label">Agregar productos</div>
+    <label>Buscar producto</label>
+    <input type="text" id="prodSearch" placeholder="Escribe el nombre del producto…" autocomplete="off">
+    <div id="prodResults"></div>
+
+    <div id="cartWrap" style="display:none; margin-top:12px;">
+      <label style="margin-bottom:6px;">Productos seleccionados</label>
+      <table id="cartTable">
+        <thead><tr><th>Producto</th><th>Peso unit.</th><th>Cant.</th><th></th></tr></thead>
+        <tbody id="cartTbody"></tbody>
+      </table>
+    </div>
+
+    <div class="divider-label">Peso y dimensiones del envío</div>
+    <div class="row">
+      <div>
+        <label>Peso total (kg)</label>
+        <input type="number" id="pesoTotal" min="0" step="0.01" value="1">
+      </div>
+      <div>
+        <label>Cantidad de bultos</label>
+        <input type="number" id="cantBultos" min="1" step="1" value="1">
+      </div>
+      <div>
+        <label>Largo (cm)</label>
+        <input type="number" id="largo" min="0" step="1" placeholder="opcional">
+      </div>
+      <div>
+        <label>Ancho (cm)</label>
+        <input type="number" id="ancho" min="0" step="1" placeholder="opcional">
+      </div>
+      <div>
+        <label>Alto (cm)</label>
+        <input type="number" id="alto" min="0" step="1" placeholder="opcional">
+      </div>
+    </div>
+    <div class="muted" id="volInfo">Peso volumétrico = (largo × ancho × alto) / 4.000. Si seleccionas productos con medidas registradas, se estima automáticamente sumando el volumen de cada uno, simulando que van juntos en un mismo despacho. <b>El cálculo de precio de cajas juntas es un estimado.</b> Si quieres el número y precio exacto, ingresa la cantidad de bultos paqueteados y el Largo/Ancho/Alto del paquete final ya armado (si son varios bultos iguales, son las medidas de uno solo) — eso tiene prioridad sobre la estimación automática.</div>
+  </section>
+
+  <section class="card">
+
+    <div class="card-title">
+      <span class="card-num">02</span>
+      <h2>Destino</h2>
+      <span class="hint">comuna de entrega</span>
+    </div>
+    <label>Buscar comuna</label>
+    <input type="text" id="comunaInput" placeholder="Ej: Ñuñoa, Puerto Montt, Rancagua…" autocomplete="off">
+    <div id="comunaResults"></div>
+    <div id="selectedComuna" class="selectedComuna"></div>
+
+    <div id="hubRow" style="display:none; margin-top:10px;">
+      <div class="row">
+        <div id="hubSelectWrap" style="display:none;">
+          <label>Sucursal L&amp;G más cercana</label>
+          <select id="hubSelect"></select>
+        </div>
+        <div class="highlight-field">
+          <label>Radio de la comuna</label>
+          <div class="sublabel">Solo aplica para L&amp;G Solutions — no afecta a Blue Express ni Starken.</div>
+          <select id="radioSelect">
+            <option value="RU" selected>Radio urbano (misma ciudad de la sucursal)</option>
+            <option value="FRU">Fuera de radio urbano (+50%)</option>
+          </select>
+        </div>
+        <div id="blueModoWrap">
+          <label>Modalidad Blue Express</label>
+          <select id="blueModo">
+            <option value="domicilio">Entrega a domicilio</option>
+            <option value="punto">Retiro en punto Blue Express</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-title">
+      <span class="card-num">03</span>
+      <h2>Resultado</h2>
+      <span class="hint" id="pesoUsadoHint"></span>
+    </div>
+    <div id="noResult" class="muted">Selecciona una comuna de destino para ver las tarifas.</div>
+    <div id="resultsGrid" class="results-grid" style="display:none;"></div>
+    <div class="toggle-row">
+      <label style="display:inline; margin:0;"><input type="checkbox" id="ivaToggle" checked style="width:auto;"> Mostrar valores con IVA (19%) donde el tarifario es neto</label>
+    </div>
+    <div class="toggle-row">
+      <label style="display:inline; margin:0;"><input type="checkbox" id="markupToggle" checked style="width:auto;"> Incluir margen de $1.500 por envío (ganancia de la empresa)</label>
+    </div>
+    <div class="muted" style="margin-top:6px;">Blue Express ya incluye IVA en su tarifario. Starken y L&amp;G Solutions publican valores netos (sin IVA); esta calculadora los ajusta para comparar en igualdad de condiciones si la casilla está marcada. El margen de $1.500 se suma al final, sobre el costo real de cada courier.</div>
+  </section>
+
+  <section class="card">
+    <div class="card-title">
+      <span class="card-num">04</span>
+      <h2>Editar tarifas</h2>
+      <span class="hint">Blue Express &amp; L&amp;G Solutions</span>
+    </div>
+    <div class="muted">Las tarifas de Starken (por comuna) vienen del tarifario original; para actualizarlas hay que regenerar este archivo. Las de Blue Express y L&amp;G puedes ajustarlas aquí — quedan guardadas en este navegador para la próxima vez (no se comparten entre computadores).</div>
+    <details>
+      <summary>Editar tarifas de Blue Express y L&amp;G Solutions</summary>
+      <div id="rateEditor" style="margin-top:10px;"></div>
+      <button class="secondary tiny" id="saveRates" style="margin-top:8px;">Guardar cambios</button>
+      <button class="secondary tiny" id="resetRates" style="margin-top:8px;">Restaurar valores originales</button>
+      <span id="rateSaveMsg" class="muted" style="margin-left:8px;"></span>
+    </details>
+  </section>
+
+  <footer>Origen fijo: Santiago (RM). Pesos volumétricos y brackets &gt;15kg (Starken) se interpolan linealmente a partir del tarifario original. Tarifas guardadas quedan en este navegador (localStorage), no en la nube.</footer>
+</div>
+
+<script>
+const ORIGINAL_DATA = {"starken": [["XV", "ARICA", 5445, 9429, 14983, 17756, 21454, 22849, 139387, 925], ["XV", "BELEN", 32672, 56571, 89899, 106538, 128723, 137092, 836319, 5551], ["XV", "CAMARONES", 32672, 56571, 89899, 106538, 128723, 137092, 836319, 5551], ["XV", "CAQUENA", 215529, 219513, 225067, 227840, 231538, 232933, 349471, 925], ["XV", "CODPA", 32672, 56571, 89899, 106538, 128723, 137092, 836319, 5551], ["XV", "COSAPILLA", 32672, 56571, 89899, 106538, 128723, 137092, 836319, 5551], ["XV", "CUYA", 32672, 56571, 89899, 106538, 128723, 137092, 836319, 5551], ["XV", "ESQUINA", 32672, 56571, 89899, 106538, 128723, 137092, 836319, 5551], ["XV", "GENERAL LAGOS", 32672, 56571, 89899, 106538, 128723, 137092, 836319, 5551], ["XV", "MOLINOS", 10891, 18857, 29966, 35513, 42908, 45697, 278773, 1850], ["XV", "PACHAMA", 32672, 56571, 89899, 106538, 128723, 137092, 836319, 5551], ["XV", "PoconChile", 10891, 18857, 29966, 35513, 42908, 45697, 278773, 1850], ["XV", "Putre", 64269, 68252, 73807, 76580, 80277, 81672, 198210, 925], ["XV", "SOCOROMA", 32672, 56571, 89899, 106538, 128723, 137092, 836319, 5551], ["XV", "SORA", 10891, 18857, 29966, 35513, 42908, 45697, 278773, 1850], ["XV", "TIGNAMAR", 32672, 56571, 89899, 106538, 128723, 137092, 836319, 5551], ["XV", "VISVIRI", 64269, 68252, 73807, 76580, 80277, 81672, 198210, 925], ["I", "IQUIQUE", 5445, 9429, 14059, 17294, 20529, 21924, 136067, 925], ["I", "ALTO HOSPICIO", 5445, 9429, 14059, 17294, 20529, 21924, 136067, 925], ["I", "ANCUAQUE", 32672, 56571, 84353, 103765, 123176, 131546, 816403, 5551], ["I", "CAMINA", 64269, 68252, 72882, 76118, 79353, 80748, 194891, 925], ["I", "CANCOSA", 32672, 56571, 84353, 103765, 123176, 131546, 816403, 5551], ["I", "CARIQUIMA", 32672, 56571, 84353, 103765, 123176, 131546, 816403, 5551], ["I", "COLCHANE", 64269, 68252, 72882, 76118, 79353, 80748, 194891, 925], ["I", "COLLACAGUA", 32672, 56571, 84353, 103765, 123176, 131546, 816403, 5551], ["I", "HUARA", 10891, 18857, 28118, 34588, 41059, 43849, 272134, 1850], ["I", "ISLUGA", 32672, 56571, 84353, 103765, 123176, 131546, 816403, 5551], ["I", "La Hauyca", 10891, 18857, 28118, 34588, 41059, 43849, 272134, 1850], ["I", "La Tirana", 10891, 18857, 28118, 34588, 41059, 43849, 272134, 1850], ["I", "LIRIMA", 32672, 56571, 84353, 103765, 123176, 131546, 816403, 5551], ["I", "MAMINA", 32672, 56571, 84353, 103765, 123176, 131546, 816403, 5551], ["I", "MOCHA", 32672, 56571, 84353, 103765, 123176, 131546, 816403, 5551], ["I", "PICA", 32672, 56571, 84353, 103765, 123176, 131546, 816403, 5551], ["I", "PISAGUA", 64269, 68252, 72882, 76118, 79353, 80748, 194891, 925], ["I", "POZO ALMONTE", 5445, 9429, 14059, 17294, 20529, 21924, 136067, 925], ["I", "SOTOCA", 32672, 56571, 84353, 103765, 123176, 131546, 816403, 5551], ["I", "YAPE", 11328, 15311, 19941, 23176, 26412, 27807, 141950, 925], ["II", "CALAMA", 5445, 8975, 13597, 17294, 20529, 21832, 130605, 925], ["II", "ANTOFAGASTA", 5445, 8504, 13134, 15908, 19605, 20908, 129681, 925], ["II", "AIQUINA", 10891, 17950, 27193, 34588, 41059, 43664, 261210, 1850], ["II", "BAQUEDANO", 11980, 18709, 28896, 34997, 43131, 45997, 285297, 2035], ["II", "CALETA BUENA", 32672, 51025, 78807, 95445, 117630, 125445, 778084, 5551], ["II", "CASPANA", 10891, 17950, 27193, 34588, 41059, 43664, 261210, 1850], ["II", "COBIJA", 32672, 51025, 78807, 95445, 117630, 125445, 778084, 5551], ["II", "HORNITOS", 10891, 17008, 26269, 31815, 39210, 41815, 259361, 1850], ["II", "LA NEGRA", 10891, 17008, 26269, 31815, 39210, 41815, 259361, 1850], ["II", "LASANA", 10891, 17950, 27193, 34588, 41059, 43664, 261210, 1850], ["II", "MARIA ELENA", 5445, 8504, 13134, 15908, 19605, 20908, 129681, 925], ["II", "MEJILLONES", 10891, 17008, 26269, 31815, 39210, 41815, 259361, 1850], ["II", "PAPOSO", 32672, 51025, 78807, 95445, 117630, 125445, 778084, 5551], ["II", "QUILLAGUA", 32672, 53849, 81580, 103765, 123176, 130992, 783630, 5551], ["II", "SAN PEDRO DE ATACAMA", 5445, 8975, 13597, 17294, 20529, 21832, 130605, 925], ["II", "SIERRA GORDA", 55866, 59395, 64017, 67714, 70950, 72252, 181025, 925], ["II", "SOCAIRE", 32672, 53849, 81580, 103765, 123176, 130992, 783630, 5551], ["II", "TALTAL", 5445, 8504, 13134, 15908, 19605, 20908, 129681, 925], ["II", "TOCONAO", 32672, 53849, 81580, 103765, 123176, 130992, 783630, 5551], ["II", "TOCOPILLA", 5445, 8504, 13134, 15908, 19605, 20908, 129681, 925], ["III", "COPIAPO", 4933, 6655, 8504, 10361, 11286, 11924, 51496, 231], ["III", "ALGARROBAL", 9866, 13311, 17008, 20723, 22571, 23849, 102992, 462], ["III", "ALTO DEL CARMEN", 9866, 13311, 17008, 20723, 22571, 23849, 102992, 462], ["III", "BAHIA INGLESA", 9866, 13311, 17008, 20723, 22571, 23849, 102992, 462], ["III", "CALDERA", 4933, 6655, 8504, 10361, 11286, 11924, 51496, 231], ["III", "CANTO DE AGUA", 29597, 39933, 51025, 62168, 67714, 71546, 308975, 1387], ["III", "CARRIZAL BAJO", 29597, 39933, 51025, 62168, 67714, 71546, 308975, 1387], ["III", "CHANARAL", 4933, 6655, 8504, 10361, 11286, 11924, 51496, 231], ["III", "CONAY", 29597, 39933, 51025, 62168, 67714, 71546, 308975, 1387], ["III", "DIEGO DE ALMAGRO", 4933, 6655, 8504, 10361, 11286, 11924, 51496, 231], ["III", "EL SALVADOR", 4933, 6655, 8504, 10361, 11286, 11924, 51496, 231], ["III", "FREIRINA", 29597, 39933, 51025, 62168, 67714, 71546, 308975, 1387], ["III", "HUASCO", 9866, 13311, 17008, 20723, 22571, 23849, 102992, 462], ["III", "LA ARENA", 29597, 39933, 51025, 62168, 67714, 71546, 308975, 1387], ["III", "PAIPOTE", 9866, 13311, 17008, 20723, 22571, 23849, 102992, 462], ["III", "TIERRA AMARILLA", 9866, 13311, 17008, 20723, 22571, 23849, 102992, 462], ["III", "VALLENAR", 4933, 6655, 8504, 10361, 11286, 11924, 51496, 231], ["IV", "COQUIMBO", 4622, 6193, 8042, 8975, 10824, 11462, 51034, 231], ["IV", "ALGARROBITO", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "ALTOVALSOL", 6933, 9290, 12063, 13462, 16235, 17193, 76550, 347], ["IV", "ANDACOLLO", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "CAIMANES", 27731, 37160, 48252, 53849, 64941, 68773, 306202, 1387], ["IV", "CANELA", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "CAREN", 13866, 18580, 24126, 26924, 32471, 34387, 153101, 693], ["IV", "CERRILLOS DE TAMAYA", 6933, 9290, 12063, 13462, 16235, 17193, 76550, 347], ["IV", "CHANARAL ALTO", 13866, 18580, 24126, 26924, 32471, 34387, 153101, 693], ["IV", "CHANARAL DE CAREN", 13866, 18580, 24126, 26924, 32471, 34387, 153101, 693], ["IV", "CHILLEPIN", 54622, 56193, 58042, 58975, 60824, 61462, 101034, 231], ["IV", "COMBARBALA", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "CUNCUMEN", 13866, 18580, 24126, 26924, 32471, 34387, 153101, 693], ["IV", "DOMEYKO", 29597, 39933, 51025, 62168, 67714, 71546, 308975, 1387], ["IV", "EL HINOJAL", 6933, 9290, 12063, 13462, 16235, 17193, 76550, 347], ["IV", "EL MOLLE", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "EL PALQUI", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "EL PENON", 6933, 9290, 12063, 13462, 16235, 17193, 76550, 347], ["IV", "EL TAMBO", 27731, 37160, 48252, 53849, 64941, 68773, 306202, 1387], ["IV", "EL TANGUE", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "GABRIELA MISTRAL", 6933, 9290, 12063, 13462, 16235, 17193, 76550, 347], ["IV", "GUANAQUEROS", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "GUANGUALI", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "HACIENDA LOS ANDES", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "HORCON IV", 16176, 21676, 28147, 31412, 37882, 40118, 178618, 809], ["IV", "HUAMALATA", 6933, 9290, 12063, 13462, 16235, 17193, 76550, 347], ["IV", "HUENTELAUQUEN", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "HUINTIL", 39622, 41193, 43042, 43975, 45824, 46462, 86034, 231], ["IV", "ILLAPEL", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "LA CHIMBA", 6933, 9290, 12063, 13462, 16235, 17193, 76550, 347], ["IV", "LA HIGUERA", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "LA JARILLA", 54622, 56193, 58042, 58975, 60824, 61462, 101034, 231], ["IV", "LA MARQUESA", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "LA PLACILLA (PUNITAQUI)", 27731, 37160, 48252, 53849, 64941, 68773, 306202, 1387], ["IV", "LA SERENA", 4622, 6193, 8042, 8975, 10824, 11462, 51034, 231], ["IV", "LAS BREAS", 18487, 24773, 32168, 35899, 43294, 45849, 204134, 924], ["IV", "LAS CARDAS", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "LAS CARDAS SUR", 13866, 18580, 24126, 26924, 32471, 34387, 153101, 693], ["IV", "LAS DUNAS", 6933, 9290, 12063, 13462, 16235, 17193, 76550, 347], ["IV", "LAS RAMADAS DE TULAHUEN", 27731, 37160, 48252, 53849, 64941, 68773, 306202, 1387], ["IV", "LAS TACAS", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "LIMARI", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "LLANOS DE GUANTA", 27731, 37160, 48252, 53849, 64941, 68773, 306202, 1387], ["IV", "LOS HORNOS", 27731, 37160, 48252, 53849, 64941, 68773, 306202, 1387], ["IV", "LOS OLIVOS", 6933, 9290, 12063, 13462, 16235, 17193, 76550, 347], ["IV", "LOS VILOS", 4622, 6193, 8042, 8975, 10824, 11462, 51034, 231], ["IV", "MINCHA", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "MONTE GRANDE", 18487, 24773, 32168, 35899, 43294, 45849, 204134, 924], ["IV", "MONTE PATRIA", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "MORRILLOS", 27731, 37160, 48252, 53849, 64941, 68773, 306202, 1387], ["IV", "OVALLE", 4622, 6193, 8042, 8975, 10824, 11462, 51034, 231], ["IV", "PAIHUANO", 13866, 18580, 24126, 26924, 32471, 34387, 153101, 693], ["IV", "PALQUIAL", 54622, 56193, 58042, 58975, 60824, 61462, 101034, 231], ["IV", "PAN DE AZUCAR", 5084, 6813, 8846, 9872, 11906, 12608, 56137, 254], ["IV", "PEDREGAL", 13866, 18580, 24126, 26924, 32471, 34387, 153101, 693], ["IV", "PICHASCA", 16176, 21676, 28147, 31412, 37882, 40118, 178618, 809], ["IV", "PICHIDANGUI", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "PISCO ELQUI", 13866, 18580, 24126, 26924, 32471, 34387, 153101, 693], ["IV", "PUERTO ALDEA", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "PUERTO VELERO", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "PUNITAQUI", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "PUNTA COLORADA", 13866, 18580, 24126, 26924, 32471, 34387, 153101, 693], ["IV", "QUEBRADA DE TALCA", 6933, 9290, 12063, 13462, 16235, 17193, 76550, 347], ["IV", "QUELON", 27731, 37160, 48252, 53849, 64941, 68773, 306202, 1387], ["IV", "QUILIMARI", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "RECOLETA IV", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "RIO HURTADO", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "SALAMANCA", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "SAN JULIAN", 6933, 9290, 12063, 13462, 16235, 17193, 76550, 347], ["IV", "SAN MARCOS", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "SOCOS", 13866, 18580, 24126, 26924, 32471, 34387, 153101, 693], ["IV", "SOTAQUI", 6933, 9290, 12063, 13462, 16235, 17193, 76550, 347], ["IV", "TAMBILLO", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "TIERRAS BLANCAS", 4622, 6193, 8042, 8975, 10824, 11462, 51034, 231], ["IV", "TONGOY", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "TOTORALILLO", 9244, 12387, 16084, 17950, 21647, 22924, 102067, 462], ["IV", "TULAHUEN", 16176, 21676, 28147, 31412, 37882, 40118, 178618, 809], ["IV", "VICUNA", 5315, 7122, 9248, 10321, 12447, 13182, 58689, 266], ["V", "VINA DEL MAR", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "ALGARROBO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "ALICAHUE", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["V", "ARTIFICIO", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "BELLOTO", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "BOCO DE QUILLOTA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "CABILDO", 6630, 7903, 9983, 12756, 14143, 14975, 66151, 347], ["V", "CACHAGUA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "CALLE LARGA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "CARTAGENA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "CASABLANCA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "CATAPILCO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "CATEMU", 7072, 8430, 10649, 13607, 15086, 15973, 70561, 370], ["V", "CHILCAS", 17681, 21076, 26622, 34017, 37714, 39933, 176403, 924], ["V", "CONCON", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "CURAUMA", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "CURIMON", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "EL MANZANAR", 27109, 27958, 29345, 31193, 32118, 32672, 66790, 231], ["V", "EL MELON", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "EL QUISCO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "EL SAUCE", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "EL TABO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "GUARDIA VIEJA", 17681, 21076, 26622, 34017, 37714, 39933, 176403, 924], ["V", "HIJUELAS", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "HORCON", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "ISLA NEGRA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "LA CALERA", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "LA CRUZ", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "LA DORMIDA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "LA LIGUA", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "LA PALMA DE QUILLOTA", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "LAGUNA VERDE", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "LAGUNILLAS", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "LAS CRUCES", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "LAS DICHAS", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "LAS VENTANAS", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["V", "LEYDA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "LIMACHE", 5083, 6059, 7654, 9780, 10843, 11481, 50716, 266], ["V", "LLAILLAY", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "LLOLLEO", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "LOS ANDES", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "LOS MOLLES", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "MAITENCILLO", 6188, 7376, 9318, 11906, 13200, 13976, 61741, 324], ["V", "MANDINGA", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["V", "MARBELLA", 6188, 7376, 9318, 11906, 13200, 13976, 61741, 324], ["V", "MATANZAS", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["V", "MONTENEGRO", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["V", "NOGALES", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "OCOA", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "OLMUE", 5967, 7113, 8985, 11481, 12729, 13477, 59536, 312], ["V", "PANQUEHUE", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "PAPUDO", 6188, 7376, 9318, 11906, 13200, 13976, 61741, 324], ["V", "PENABLANCA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "PETORCA", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["V", "PICHICUY", 26521, 31613, 39933, 51025, 56571, 59899, 264605, 1387], ["V", "PLACILLA (VINA DEL MAR)", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "PLAYA ANCHA", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "PORTILLO", 17681, 21076, 26622, 34017, 37714, 39933, 176403, 924], ["V", "PUCHUNCAVI", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "PUNTA DE TRALCA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "PUTAENDO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "QUEBRADA DE ALVARADO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "QUILLOTA", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "QUILPUE", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "QUINTAY", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["V", "QUINTERO", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "RENACA", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "RINCONADA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "RINCONADA DE GUZMAN", 17681, 21076, 26622, 34017, 37714, 39933, 176403, 924], ["V", "RINCONADA DE SILVA", 17681, 21076, 26622, 34017, 37714, 39933, 176403, 924], ["V", "ROCAS DE SANTO DOMINGO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "SALADILLO", 17681, 21076, 26622, 34017, 37714, 39933, 176403, 924], ["V", "SAN ANTONIO", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "SAN ESTEBAN", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "SAN FELIPE", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "SAN ISIDRO DE QUILLOTA", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "SAN PEDRO DE QUILLOTA", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "SAN SEBASTIAN", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "SANTA MARIA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "TABOLANGO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["V", "TUNQUEN", 17681, 21076, 26622, 34017, 37714, 39933, 176403, 924], ["V", "VALPARAISO", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "VILLA ALEMANA", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["V", "ZAPALLAR", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "RANCAGUA", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["VI", "AGUA BUENA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "BUCALEMU", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "CAHUIL", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["VI", "CALETONES", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["VI", "CHEPICA", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["VI", "CHIMBARONGO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "CIRUELOS", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["VI", "CODEGUA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "COINCO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "COLTAUCO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "COYA", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["VI", "CUNACO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "DONIHUE", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "EL CARMEN RENGO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "EL MANZANO", 26521, 31613, 39933, 51025, 56571, 59899, 264605, 1387], ["VI", "GRANEROS", 5304, 6323, 7987, 10205, 11314, 11980, 52921, 277], ["VI", "LA CEBADA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "LA ESTRELLA", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["VI", "LA RUFINA", 46437, 47286, 48672, 50521, 51445, 52000, 86118, 231], ["VI", "LARMAHUE", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "LAS CABRAS", 17681, 21076, 26622, 34017, 37714, 39933, 176403, 924], ["VI", "LAS NIEVES", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["VI", "LITUECHE", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["VI", "LO MIRANDA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "LOLOL", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "LOS LINGUES", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "MACHALI", 5083, 6059, 7654, 9780, 10843, 11481, 50716, 266], ["VI", "MALLOA", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["VI", "MARCHIHUE", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "NANCAGUA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "NAVIDAD", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["VI", "OLIVAR ALTO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "OLIVAR BAJO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "PALMILLA san fernando", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["VI", "PAREDONES", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["VI", "PELEQUEN", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "PERALILLO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "PEUMO", 17681, 21076, 26622, 34017, 37714, 39933, 176403, 924], ["VI", "PICHIDEGUA", 17681, 21076, 26622, 34017, 37714, 39933, 176403, 924], ["VI", "PICHILEMU", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["VI", "PLACILLA (SAN FERNANDO)", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "POPETA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "PUENTE NEGRO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "PUERTECILLO", 26521, 31613, 39933, 51025, 56571, 59899, 264605, 1387], ["VI", "PUMANQUE", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["VI", "QUINTA DE TILCOCO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "RAPEL", 17681, 21076, 26622, 34017, 37714, 39933, 176403, 924], ["VI", "RENGO", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["VI", "REQUINOA", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "ROSARIO", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "SAN FERNANDO", 4420, 5269, 6655, 8504, 9429, 9983, 44101, 231], ["VI", "SAN FRANCISCO DE MOSTAZAL", 8840, 10538, 13311, 17008, 18857, 19966, 88202, 462], ["VI", "SAN VICENTE DE TAGUATAGUA", 5481, 6533, 8253, 10545, 11691, 12379, 54685, 287], ["VI", "SANTA CRUZ", 5083, 6059, 7654, 9780, 10843, 11481, 50716, 266], ["VI", "SEWELL", 13261, 15807, 19966, 25513, 28286, 29950, 132303, 693], ["VI", "TOPOCALMA", 26521, 31613, 39933, 51025, 56571, 59899, 264605, 1387], ["VI", "VILLA ALHUE", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["VII", "CURICO", 4622, 5731, 7580, 8975, 10361, 10908, 45025, 231], ["VII", "TALCA", 4622, 5731, 7580, 8975, 10361, 10908, 45025, 231], ["VII", "BATUCO (TALCA)", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "BOBADILLA", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "CAMARICO", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "CAUQUENES", 4622, 5731, 7580, 8975, 10361, 10908, 45025, 231], ["VII", "CHANCO", 6933, 8597, 11370, 13462, 15542, 16361, 67538, 347], ["VII", "COLBUN", 13866, 17193, 22739, 26924, 31084, 32723, 135076, 693], ["VII", "CONSTITUCION", 5315, 6591, 8717, 10321, 11916, 12544, 51779, 266], ["VII", "CULENAR", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "CUMPEO", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "CURANIPE", 6933, 8597, 11370, 13462, 15542, 16361, 67538, 347], ["VII", "CUREPTO", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "DUAO", 18487, 22924, 30319, 35899, 41445, 43630, 180101, 924], ["VII", "EMPEDRADO", 6008, 7450, 9854, 11667, 13470, 14180, 58533, 300], ["VII", "GUALLECO", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "HUALANE", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "ILOCA", 13866, 17193, 22739, 26924, 31084, 32723, 135076, 693], ["VII", "LICANTEN", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "LINARES", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "LLICO", 13866, 17193, 22739, 26924, 31084, 32723, 135076, 693], ["VII", "LO VALDIVIA", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "LONGAVI", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "LONTUE", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "LOS NICHES", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "MAULE", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "MOLINA", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "NIRIVILO", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "PANIMAVIDA", 18487, 22924, 30319, 35899, 41445, 43630, 180101, 924], ["VII", "PARRAL", 6008, 7450, 9854, 11667, 13470, 14180, 58533, 300], ["VII", "PELARCO", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "PELLUHUE", 6933, 8597, 11370, 13462, 15542, 16361, 67538, 347], ["VII", "PENCAHUE", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "RAUCO", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "RAUQUEN", 4622, 5731, 7580, 8975, 10361, 10908, 45025, 231], ["VII", "RETIRO", 6008, 7450, 9854, 11667, 13470, 14180, 58533, 300], ["VII", "RIO CLARO", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "ROMERAL", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "SAGRADA FAMILIA", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "SAN CLEMENTE", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "SAN JAVIER", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "SAN PEDRO DE ALCANTARA", 13866, 17193, 22739, 26924, 31084, 32723, 135076, 693], ["VII", "SAN RAFAEL", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "TENO", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "VICHUQUEN", 13866, 17193, 22739, 26924, 31084, 32723, 135076, 693], ["VII", "VILLA ALEGRE", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "VILLA PRAT", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VII", "YERBAS BUENAS", 9244, 11462, 15160, 17950, 20723, 21815, 90050, 462], ["VIII", "CHILLAN", 4933, 5731, 7580, 9429, 10361, 11000, 48261, 231], ["VIII", "CONCEPCION", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "LOS ANGELES", 4933, 6193, 8042, 9429, 10361, 11000, 50571, 231], ["VIII", "ALTO BIO BIO", 14798, 18580, 24126, 28286, 31084, 33000, 151714, 693], ["VIII", "ANTIHUALA", 19731, 23866, 31261, 37714, 41445, 44000, 193042, 924], ["VIII", "ANTUCO", 14798, 18580, 24126, 28286, 31084, 33000, 151714, 693], ["VIII", "ARAUCO", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "BUCHUPUREO", 27731, 34387, 45479, 53849, 62168, 65445, 270151, 1387], ["VIII", "BULNES", 4933, 5731, 7580, 9429, 10361, 11000, 48261, 231], ["VIII", "CABRERO", 4933, 5731, 7580, 9429, 10361, 11000, 48261, 231], ["VIII", "CAMPANARIO", 16771, 19486, 25771, 32057, 35229, 37400, 164086, 786], ["VIII", "CANETE", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "CARAMPANGUE", 14798, 17899, 23445, 28286, 31084, 33000, 144782, 693], ["VIII", "CAYUCUPIL", 30189, 40731, 54926, 63411, 71897, 76114, 342514, 2263], ["VIII", "CERRO ALTO", 19731, 23866, 31261, 37714, 41445, 44000, 193042, 924], ["VIII", "CHARRUA", 14798, 17193, 22739, 28286, 31084, 33000, 144782, 693], ["VIII", "CHECURA", 9866, 11462, 15160, 18857, 20723, 22000, 96521, 462], ["VIII", "CHIGUAYANTE", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "CHOLGUAN", 31570, 36679, 48511, 60343, 66313, 70400, 308867, 1479], ["VIII", "COBQUECURA", 13866, 17193, 22739, 26924, 31084, 32723, 135076, 693], ["VIII", "COELEMU", 4933, 5731, 7580, 9429, 10361, 11000, 48261, 231], ["VIII", "COIHUE", 29597, 37160, 48252, 56571, 62168, 66000, 303429, 1387], ["VIII", "COIHUECO", 14798, 17193, 22739, 28286, 31084, 33000, 144782, 693], ["VIII", "COLCURA", 14798, 17899, 23445, 28286, 31084, 33000, 144782, 693], ["VIII", "COLIUMO", 14798, 17899, 23445, 28286, 31084, 33000, 144782, 693], ["VIII", "CONTULMO", 6166, 7742, 10053, 11786, 12952, 13750, 63214, 289], ["VIII", "COPIULEMU", 9866, 11933, 15630, 18857, 20723, 22000, 96521, 462], ["VIII", "CORONEL", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "CURANILAHUE", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "DICHATO", 14798, 17899, 23445, 28286, 31084, 33000, 144782, 693], ["VIII", "EL CARMEN CHILLAN", 5919, 6877, 9096, 11314, 12434, 13200, 57913, 277], ["VIII", "FILOMENA", 9866, 11462, 15160, 18857, 20723, 22000, 96521, 462], ["VIII", "FLORIDA", 9866, 11462, 15160, 18857, 20723, 22000, 96521, 462], ["VIII", "GUARILIHUE", 9866, 11462, 15160, 18857, 20723, 22000, 96521, 462], ["VIII", "HUALPENCILLO", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "HUALQUI", 14798, 17899, 23445, 28286, 31084, 33000, 144782, 693], ["VIII", "HUEPIL", 14798, 18580, 24126, 28286, 31084, 33000, 151714, 693], ["VIII", "ISLA SANTA MARIA", 89933, 90966, 92815, 94429, 95361, 96000, 133261, 231], ["VIII", "LA ARAUCANA", 19731, 23866, 31261, 37714, 41445, 44000, 193042, 924], ["VIII", "LAJA", 6166, 7742, 10053, 11786, 12952, 13750, 63214, 289], ["VIII", "LARAQUETE", 14798, 17899, 23445, 28286, 31084, 33000, 144782, 693], ["VIII", "LAS TRANCAS", 14798, 17193, 22739, 28286, 31084, 33000, 144782, 693], ["VIII", "LEBU", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "LEONERA", 9866, 11462, 15160, 18857, 20723, 22000, 96521, 462], ["VIII", "LIRQUEN", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "LOS ALAMOS", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "LOS HORCONES", 14798, 17899, 23445, 28286, 31084, 33000, 144782, 693], ["VIII", "LOTA", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "MEIPO", 9866, 11462, 15160, 18857, 20723, 22000, 96521, 462], ["VIII", "MINAS DEL PRADO", 29597, 34387, 45479, 56571, 62168, 66000, 289563, 1387], ["VIII", "MONTE AGUILA", 14798, 17193, 22739, 28286, 31084, 33000, 144782, 693], ["VIII", "MULCHEN", 4933, 6193, 8042, 9429, 10361, 11000, 50571, 231], ["VIII", "NACIMIENTO", 6117, 7680, 9972, 11691, 12848, 13640, 62709, 287], ["VIII", "NAHUELTORO", 29597, 34387, 45479, 56571, 62168, 66000, 289563, 1387], ["VIII", "NEGRETE", 14798, 18580, 24126, 28286, 31084, 33000, 151714, 693], ["VIII", "NINHUE", 14798, 17193, 22739, 28286, 31084, 33000, 144782, 693], ["VIII", "NIPAS", 14798, 17193, 22739, 28286, 31084, 33000, 144782, 693], ["VIII", "NIQUEN", 4933, 5731, 7580, 9429, 10361, 11000, 48261, 231], ["VIII", "PANGAL", 29597, 34387, 45479, 56571, 62168, 66000, 289563, 1387], ["VIII", "PEMUCO", 14798, 17193, 22739, 28286, 31084, 33000, 144782, 693], ["VIII", "PENCO", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "PERALES", 9866, 11462, 15160, 18857, 20723, 22000, 96521, 462], ["VIII", "PINGUERAL", 14798, 17899, 23445, 28286, 31084, 33000, 144782, 693], ["VIII", "PINTO", 14798, 17193, 22739, 28286, 31084, 33000, 144782, 693], ["VIII", "POLCURA", 29597, 37160, 48252, 56571, 62168, 66000, 303429, 1387], ["VIII", "PORTEZUELO", 14798, 17193, 22739, 28286, 31084, 33000, 144782, 693], ["VIII", "PUEBLO SECO", 29597, 34387, 45479, 56571, 62168, 66000, 289563, 1387], ["VIII", "PUNTA DE PARRA", 14798, 17899, 23445, 28286, 31084, 33000, 144782, 693], ["VIII", "PUNTA LAVAPIE", 19731, 23866, 31261, 37714, 41445, 44000, 193042, 924], ["VIII", "QUILACO", 15933, 20004, 25976, 30454, 33467, 35530, 163346, 746], ["VIII", "QUILLAITUN", 19731, 23866, 31261, 37714, 41445, 44000, 193042, 924], ["VIII", "QUILLECO", 14798, 18580, 24126, 28286, 31084, 33000, 151714, 693], ["VIII", "QUILLON", 4933, 5731, 7580, 9429, 10361, 11000, 48261, 231], ["VIII", "QUINCHAMALI", 29597, 34387, 45479, 56571, 62168, 66000, 289563, 1387], ["VIII", "QUIRIHUE", 4622, 5731, 7580, 8975, 10361, 10908, 45025, 231], ["VIII", "QUIRIQUINA", 14798, 17193, 22739, 28286, 31084, 33000, 144782, 693], ["VIII", "RAFAEL", 19731, 23866, 31261, 37714, 41445, 44000, 193042, 924], ["VIII", "RAMADILLAS", 14798, 17899, 23445, 28286, 31084, 33000, 144782, 693], ["VIII", "RANGUELMO", 29597, 34387, 45479, 56571, 62168, 66000, 289563, 1387], ["VIII", "RANQUIL", 14798, 17193, 22739, 28286, 31084, 33000, 144782, 693], ["VIII", "RIHUE", 29597, 37160, 48252, 56571, 62168, 66000, 303429, 1387], ["VIII", "RUCAPEQUEN", 29597, 34387, 45479, 56571, 62168, 66000, 289563, 1387], ["VIII", "SAN CARLOS", 4933, 5731, 7580, 9429, 10361, 11000, 48261, 231], ["VIII", "SAN FABIAN DE ALICO", 4933, 5731, 7580, 9429, 10361, 11000, 48261, 231], ["VIII", "SAN GREGORIO", 4933, 5731, 7580, 9429, 10361, 11000, 48261, 231], ["VIII", "SAN IGNACIO", 14798, 17193, 22739, 28286, 31084, 33000, 144782, 693], ["VIII", "SAN NICOLAS", 14798, 17193, 22739, 28286, 31084, 33000, 144782, 693], ["VIII", "SAN PEDRO DE LA PAZ", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "SAN ROSENDO", 14798, 18580, 24126, 28286, 31084, 33000, 151714, 693], ["VIII", "SANTA BARBARA", 6067, 7618, 9892, 11597, 12744, 13530, 62203, 284], ["VIII", "SANTA CLARA", 29597, 34387, 45479, 56571, 62168, 66000, 289563, 1387], ["VIII", "SANTA JUANA", 14798, 17899, 23445, 28286, 31084, 33000, 144782, 693], ["VIII", "TALCAHUANO", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "TANILVORO", 29597, 34387, 45479, 56571, 62168, 66000, 289563, 1387], ["VIII", "TOME", 4933, 5966, 7815, 9429, 10361, 11000, 48261, 231], ["VIII", "TOROICO", 9866, 11462, 15160, 18857, 20723, 22000, 96521, 462], ["VIII", "TREGUALEMU", 29597, 34387, 45479, 56571, 62168, 66000, 289563, 1387], ["VIII", "TREHUACO", 14798, 17193, 22739, 28286, 31084, 33000, 144782, 693], ["VIII", "TRES PINOS", 19731, 23866, 31261, 37714, 41445, 44000, 193042, 924], ["VIII", "TRUPAN", 29597, 37160, 48252, 56571, 62168, 66000, 303429, 1387], ["VIII", "TUBUL", 19731, 23866, 31261, 37714, 41445, 44000, 193042, 924], ["VIII", "TUCAPEL", 14798, 18580, 24126, 28286, 31084, 33000, 151714, 693], ["VIII", "VEGAS DE ITATA", 29597, 34387, 45479, 56571, 62168, 66000, 289563, 1387], ["VIII", "VILLA LOS RIOS", 19731, 23866, 31261, 37714, 41445, 44000, 193042, 924], ["VIII", "VILLA MERCEDES", 29597, 37160, 48252, 56571, 62168, 66000, 303429, 1387], ["VIII", "VILLUCO", 9866, 11933, 15630, 18857, 20723, 22000, 96521, 462], ["VIII", "YUMBEL", 6018, 7556, 9811, 11503, 12641, 13420, 61697, 282], ["VIII", "YUNGAY", 6906, 8024, 10612, 13200, 14506, 15400, 67565, 324], ["VIII", "ZEMITA", 4933, 5731, 7580, 9429, 10361, 11000, 48261, 231], ["IX", "TEMUCO", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "ANGOL", 4933, 6193, 8042, 9429, 10361, 11000, 50571, 231], ["IX", "BARROS ARANA", 19731, 26622, 35899, 41445, 46992, 49748, 223866, 1479], ["IX", "CABURGA", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "CAJON", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "CAPITAN PASTENE", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "CARAHUE", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "CHERQUENCO", 19731, 26622, 35899, 41445, 46992, 49748, 223866, 1479], ["IX", "CHOLCHOL", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "CHOROICO", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "COLICO", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "COLLIPULLI", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "COLONIA MENDOZA", 19731, 26622, 35899, 41445, 46992, 49748, 223866, 1479], ["IX", "CONARIPE", 5673, 7654, 10321, 11916, 13510, 14303, 64361, 425], ["IX", "CUNCO", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "CURACALCO", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "CURACAUTIN", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "CURARREHUE", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "ERCILLA", 4933, 6193, 8042, 9429, 10361, 11000, 50571, 231], ["IX", "FREIRE", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "GALVARINO", 6413, 8051, 10455, 12257, 13470, 14300, 65743, 300], ["IX", "HUALPIN", 19731, 26622, 35899, 41445, 46992, 49748, 223866, 1479], ["IX", "GORBEA", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "LABRANZA", 9866, 13311, 17950, 20723, 23496, 24874, 111933, 739], ["IX", "LAS HORTENCIAS", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "LAUTARO", 9866, 13311, 17950, 20723, 23496, 24874, 111933, 739], ["IX", "LICANRAY", 5426, 7321, 9872, 11397, 12923, 13681, 61563, 407], ["IX", "LONCOCHE", 5919, 7987, 10770, 12434, 14097, 14924, 67160, 444], ["IX", "LONQUIMAY", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "LOS BOLDOS", 19731, 26622, 35899, 41445, 46992, 49748, 223866, 1479], ["IX", "LOS LAURELES", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "LOS SAUCES", 14798, 18580, 24126, 28286, 31084, 33000, 151714, 693], ["IX", "LUMACO", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "MALALCAHUELLO", 25941, 27664, 29983, 31370, 32756, 33445, 76975, 370], ["IX", "MELIPEUCO", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "NUEVA IMPERIAL", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "PADRE LAS CASAS", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "PERQUENCO", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "PILLANLELBUN", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "PITRUFQUEN", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "PORMA", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "PUCON", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "PUERTO DOMINGUEZ", 59555, 61277, 63597, 64983, 66370, 67059, 110588, 370], ["IX", "PUERTO SAAVEDRA", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "PUREN", 4933, 6193, 8042, 9429, 10361, 11000, 50571, 231], ["IX", "QUEPE", 9866, 13311, 17950, 20723, 23496, 24874, 111933, 739], ["IX", "QUEULE", 24664, 33277, 44874, 51807, 58739, 62185, 279832, 1849], ["IX", "RADAL", 19731, 26622, 35899, 41445, 46992, 49748, 223866, 1479], ["IX", "RENAICO", 14798, 18580, 24126, 28286, 31084, 33000, 151714, 693], ["IX", "RUCA RAQUI (SAAVEDRA)", 59555, 61277, 63597, 64983, 66370, 67059, 110588, 370], ["IX", "SAN PATRICIO", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "TEODORO SCHMIDT", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "TOLTEN", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "TRAIGUEN", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "TROVOLHUE", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "VICTORIA", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["IX", "VILCUN", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "VILLA BOLDO", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["IX", "VILLARRICA", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["XIV", "VALDIVIA", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["XIV", "CALAFQUEN", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["XIV", "CHAUQUEN", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["XIV", "CHOSHUENCO", 6906, 9318, 12565, 14506, 16447, 17412, 78353, 518], ["XIV", "CORRAL", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["XIV", "COZ COZ", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["XIV", "CURINANCO", 29597, 39933, 53849, 62168, 70487, 74622, 335798, 2218], ["XIV", "FUTRONO", 5919, 7987, 10770, 12434, 14097, 14924, 67160, 444], ["XIV", "HUELLAHUE", 19731, 26622, 35899, 41445, 46992, 49748, 223866, 1479], ["XIV", "LA UNION", 4933, 6655, 9429, 11286, 12672, 13361, 59118, 370], ["XIV", "LAGO RANCO", 4933, 6655, 9429, 11286, 12672, 13361, 59118, 370], ["XIV", "LANCO", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["XIV", "LIQUINE", 29597, 39933, 53849, 62168, 70487, 74622, 335798, 2218], ["XIV", "LLIFEN", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["XIV", "LOS LAGOS", 5919, 7987, 10770, 12434, 14097, 14924, 67160, 444], ["XIV", "MAFIL", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["XIV", "MEHUIN", 29597, 39933, 53849, 62168, 70487, 74622, 335798, 2218], ["XIV", "MELEFQUEN", 23633, 25355, 27675, 29061, 30448, 31137, 74666, 370], ["XIV", "NELTUME", 6413, 8652, 11667, 13470, 15272, 16168, 72756, 481], ["XIV", "NIEBLA", 25941, 27664, 29983, 31370, 32756, 33445, 76975, 370], ["XIV", "PAILLACO", 9866, 13311, 17950, 20723, 23496, 24874, 111933, 739], ["XIV", "PANGUIPULLI", 4933, 6655, 8975, 10361, 11748, 12437, 55966, 370], ["XIV", "PARCELA EL CARMEN", 19731, 26622, 35899, 41445, 46992, 49748, 223866, 1479], ["XIV", "PUNUCAPA", 29597, 39933, 53849, 62168, 70487, 74622, 335798, 2218], ["XIV", "QUILCHE", 19731, 26622, 35899, 41445, 46992, 49748, 223866, 1479], ["XIV", "RAYENCURA", 19731, 26622, 35899, 41445, 46992, 49748, 223866, 1479], ["XIV", "RINIHUE", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["XIV", "RININAHUE", 29597, 39933, 56571, 67714, 76034, 80168, 354706, 2218], ["XIV", "RIO BUENO", 4933, 6655, 9429, 11286, 12672, 13361, 59118, 370], ["XIV", "ROBLE HUACHO", 14798, 19966, 26924, 31084, 35244, 37311, 167899, 1109], ["XIV", "SAN JOSE DE LA MARIQUINA", 5919, 7987, 10770, 12434, 14097, 14924, 67160, 444], ["XIV", "SECTOR LA PENA", 19731, 26622, 35899, 41445, 46992, 49748, 223866, 1479], ["X", "OSORNO", 4933, 6655, 9429, 11286, 12672, 13361, 59118, 370], ["X", "PUERTO MONTT", 4933, 7126, 9429, 11286, 12672, 13361, 59118, 370], ["X", "ACHAO", 14798, 21378, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "AHUI", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "ALERCE", 4933, 7126, 9429, 11286, 12672, 13361, 59118, 370], ["X", "ANCUD", 4933, 7126, 9429, 11286, 12672, 13361, 59118, 370], ["X", "BAHIA MANSA", 29597, 39933, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "CALBUCO", 4933, 7126, 9429, 11286, 12672, 13361, 59118, 370], ["X", "CALETA GONZALO", 29597, 42756, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "CARELMAPU", 29597, 42756, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "CASMA", 25941, 28134, 30437, 32294, 33681, 34370, 80126, 370], ["X", "CASTRO", 4933, 7126, 9429, 11286, 12672, 13361, 59118, 370], ["X", "CAULIN", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "CHACAO", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "CHAICA", 9866, 14252, 18857, 22571, 25345, 26723, 118235, 739], ["X", "CHAITEN", 29597, 42756, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "CHEPU", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "CHONCHI", 14798, 21378, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "COCHAMO", 54261, 78387, 103714, 124143, 139395, 146975, 650294, 4067], ["X", "CURACO DE VELEZ", 14798, 21378, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "DALCAHUE", 14798, 21378, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "DEGAN", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "ENSENADA", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "ENTRE LAGOS", 29597, 39933, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "FRESIA", 5426, 7839, 10371, 12414, 13939, 14697, 65029, 407], ["X", "FRUTILLAR", 4933, 7126, 9429, 11286, 12672, 13361, 59118, 370], ["X", "FUTALEUFU", 29597, 42756, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "GUAPILACUY", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "HORNOPIREN", 29597, 42756, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "HUALAIHUE", 29597, 42756, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "HUELDEN", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "HUILLINCO", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "LA ARENA PTO MONTT", 9866, 14252, 18857, 22571, 25345, 26723, 118235, 739], ["X", "LAJAS BLANCAS", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "LECHAGUA", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "LENCA", 9866, 14252, 18857, 22571, 25345, 26723, 118235, 739], ["X", "LINAO", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "LLANQUIHUE", 14798, 21378, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "LOS MUERMOS", 14798, 21378, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "MAICOLPUE", 29597, 39933, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "MANAO", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "MAULLIN", 14798, 21378, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "MECHAICO", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "MECHUQUE", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "METRI", 9866, 14252, 18857, 22571, 25345, 26723, 118235, 739], ["X", "NAL", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "NUEVA BRAUNAU", 29597, 42756, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "PALENA", 29597, 42756, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "PALOMAR", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "PARGUA", 29597, 42756, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "PAULDEO", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "PETROHUE", 29597, 42756, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "PEULLA", 124933, 127126, 129429, 131286, 132672, 133361, 179118, 370], ["X", "PICHI PELLUCO", 14798, 21378, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "PIEDRA AZUL", 9866, 14252, 18857, 22571, 25345, 26723, 118235, 739], ["X", "PUAUCHO", 29597, 39933, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "PUCATRIHUE", 29597, 39933, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "PUELO", 54261, 78387, 103714, 124143, 139395, 146975, 650294, 4067], ["X", "PUENTE QUILO", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "PUERTO OCTAY", 14798, 19966, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "PUERTO VARAS", 4933, 7126, 9429, 11286, 12672, 13361, 59118, 370], ["X", "PUNTA CORONA", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "PUQUELDON", 14798, 21378, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "PURRANQUE", 4933, 6655, 9429, 11286, 12672, 13361, 59118, 370], ["X", "PUYEHUE", 14798, 19966, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "QUEILEN", 14798, 21378, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "QUELLON", 4933, 7126, 9429, 11286, 12672, 13361, 59118, 370], ["X", "QUEMCHI", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "QUETALMAHUE", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "QUILLAIPE", 9866, 14252, 18857, 22571, 25345, 26723, 118235, 739], ["X", "QUINCHAO", 14798, 21378, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "RIO NEGRO", 14798, 19966, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "SAN JUAN", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["X", "SAN JUAN DE LA COSTA", 29597, 39933, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "SAN PABLO", 14798, 19966, 28286, 33857, 38017, 40084, 177353, 1109], ["X", "TRUMAO", 29597, 39933, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "VILLA SANTA LUCIA", 29597, 42756, 56571, 67714, 76034, 80168, 354706, 2218], ["X", "YUSTE", 19731, 28504, 37714, 45143, 50689, 53445, 236471, 1479], ["XI", "COYHAIQUE", 7193, 9429, 14059, 18681, 23303, 24697, 141235, 1203], ["XI", "BAHIA MURTA", 87193, 89429, 94059, 98681, 103303, 104697, 221235, 1203], ["XI", "BALMACEDA", 52193, 54429, 59059, 63681, 68303, 69697, 186235, 1203], ["XI", "CALETA ANDRADE", 237193, 239429, 244059, 248681, 253303, 254697, 371235, 1203], ["XI", "CHILE CHICO", 307193, 309429, 314059, 318681, 323303, 324697, 441235, 1203], ["XI", "COCHRANE", 287193, 289429, 294059, 298681, 303303, 304697, 421235, 1203], ["XI", "GUADAL", 162193, 164429, 169059, 173681, 178303, 179697, 296235, 1203], ["XI", "GUAITECAS", 237193, 239429, 244059, 248681, 253303, 254697, 371235, 1203], ["XI", "LA JUNTA", 127193, 129429, 134059, 138681, 143303, 144697, 261235, 1203], ["XI", "LA TAPERA", 247193, 249429, 254059, 258681, 263303, 264697, 381235, 1203], ["XI", "LAGO VERDE", 267193, 269429, 274059, 278681, 283303, 284697, 401235, 1203], ["XI", "MELINKA", 237193, 239429, 244059, 248681, 253303, 254697, 371235, 1203], ["XI", "NIREHUAO", 47193, 49429, 54059, 58681, 63303, 64697, 181235, 1203], ["XI", "PUERTO AGUIRRE", 237193, 239429, 244059, 248681, 253303, 254697, 371235, 1203], ["XI", "PUERTO AYSEN", 15597, 17832, 22462, 27084, 31706, 33101, 149639, 1203], ["XI", "PUERTO BERTRAND", 43160, 56571, 84353, 112084, 139815, 148185, 847412, 7215], ["XI", "PUERTO CHACABUCO", 57193, 59429, 64059, 68681, 73303, 74697, 191235, 1203], ["XI", "PUERTO CISNES", 127193, 129429, 134059, 138681, 143303, 144697, 261235, 1203], ["XI", "PUERTO TRANQUILO", 127193, 129429, 134059, 138681, 143303, 144697, 261235, 1203], ["XI", "PUYUHUAPI", 87193, 89429, 94059, 98681, 103303, 104697, 221235, 1203], ["XI", "RIO IBANEZ", 97193, 99429, 104059, 108681, 113303, 114697, 231235, 1203], ["XI", "TORTEL", 307193, 309429, 314059, 318681, 323303, 324697, 441235, 1203], ["XI", "VALLE SIMPSON", 37193, 39429, 44059, 48681, 53303, 54697, 171235, 1203], ["XI", "VILLA AMENGUAL", 87193, 89429, 94059, 98681, 103303, 104697, 221235, 1203], ["XI", "VILLA CERRO CASTILLO", 87193, 89429, 94059, 98681, 103303, 104697, 221235, 1203], ["XI", "VILLA MANIHUALES", 72193, 74429, 79059, 83681, 88303, 89697, 206235, 1203], ["XI", "VILLA OHIGGINS", 307193, 309429, 314059, 318681, 323303, 324697, 441235, 1203], ["XI", "VILLA ORTEGA", 47193, 49429, 54059, 58681, 63303, 64697, 181235, 1203], ["XII", "PUNTA ARENAS", 7193, 9429, 14059, 18681, 23303, 24832, 153025, 1203], ["XII", "CAMERON", 43160, 56571, 84353, 112084, 139815, 148992, 918151, 7215], ["XII", "CERRO SOMBRERO", 217277, 219513, 224143, 228765, 233387, 234916, 363109, 1203], ["XII", "LAGUNA BLANCA", 43160, 56571, 84353, 112084, 139815, 148992, 918151, 7215], ["XII", "MONTE AYMOND", 43160, 56571, 84353, 112084, 139815, 148992, 918151, 7215], ["XII", "PORVENIR", 217277, 219513, 224143, 228765, 233387, 234916, 363109, 1203], ["XII", "PRIMAVERA", 43160, 56571, 84353, 112084, 139815, 148992, 918151, 7215], ["XII", "PUERTO BORIES", 43160, 56571, 84353, 112084, 139815, 148992, 918151, 7215], ["XII", "PUERTO NATALES", 7193, 9429, 14059, 18681, 23303, 24832, 153025, 1203], ["XII", "PUERTO TORO", 43160, 56571, 84353, 112084, 139815, 148992, 918151, 7215], ["XII", "PUERTO WILLIAMS", 217277, 219513, 224143, 228765, 233387, 234916, 363109, 1203], ["XII", "PUNTA DELGADA", 43160, 56571, 84353, 112084, 139815, 148992, 918151, 7215], ["XII", "RIO VERDE", 43160, 56571, 84353, 112084, 139815, 148992, 918151, 7215], ["XII", "TORRES DEL PAINE", 43160, 56571, 84353, 112084, 139815, 148992, 918151, 7215], ["RM", "SANTIAGO", 3361, 4202, 4857, 5227, 5790, 6269, 25571, 187], ["RM", "ALHUE", 10084, 12605, 14571, 15681, 17370, 18807, 76714, 560], ["RM", "ALTO EL CANELO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "ALTO JAHUEL", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "BATUCO (RM)", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "BOLLENAR", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "BUIN", 4370, 5462, 6314, 6795, 7527, 8150, 33243, 243], ["RM", "CAJON DEL MAIPO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "CALERA DE TANGO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "CHAMPA", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "CHICUREO", 4370, 5462, 6314, 6795, 7527, 8150, 33243, 243], ["RM", "CHOCALAN", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "CIUDAD DE LOS VALLES", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "CODIGUA", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "COLINA", 4370, 5462, 6314, 6795, 7527, 8150, 33243, 243], ["RM", "CULIPRAN", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "CURACAVI", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "EL CANELO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "EL COLORADO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "EL INGENIO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "EL MELOCOTON", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "EL MEMBRILLO", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "EL MONTE", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "FARELLONES", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "GUAYACAN", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "HOSPITAL", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "HUELQUEN", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "ISLA DE MAIPO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "JUNCAL", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "LA OBRA", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "LA PARVA", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "LAGUNA ACULEO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "LAMPA", 4034, 5042, 5829, 6272, 6948, 7523, 30686, 224], ["RM", "LAS VERTIENTES", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "LINDEROS", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "LO CHACON", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "LO VALDES", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "LOMAS DE LO AGUIRRE", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "LONQUEN", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "LOS MAITENES", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "MAIPO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "MALLOCO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "MARIA PINTO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "MELIPILLA", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "NOS", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "NOVICIADO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "PADRE HURTADO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "PAINE", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "PENAFLOR", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "PIRQUE", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "POLPAICO", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "POMAIRE", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "RUNGUE", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "SAN ALFONSO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "SAN GABRIEL", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "SAN JOSE DE MAIPO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "SAN MANUEL", 20168, 25210, 29143, 31361, 34739, 37613, 153429, 1119], ["RM", "SAN PEDRO DE MELIPILLA", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "SANTA ROSA DE CHENA", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "TALAGANTE", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "TILTIL", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "VALDIVIA DE PAINE", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373], ["RM", "VALLE NEVADO", 6723, 8403, 9714, 10454, 11580, 12538, 51143, 373]], "blueDomicilio": {"Arica y Parinacota": [7150, 8300, 12400, 17000, 25000], "Tarapacá": [6550, 7400, 10700, 15500, 23000], "Antofagasta": [6300, 7000, 9900, 14000, 21000], "Atacama": [4850, 5900, 7700, 9900, 13800], "Coquimbo": [4600, 5300, 7000, 9600, 12800], "Valparaíso": [3900, 4500, 6000, 7700, 9700], "Metropolitana de Santiago": [3100, 3650, 4700, 5700, 7600], "O'Higgins": [4000, 4800, 6400, 8300, 11300], "Maule": [4200, 5200, 6700, 8900, 12100], "Ñuble": [4600, 5400, 7200, 9200, 12600], "Bío-Bío": [4700, 5700, 7300, 9500, 12800], "Araucanía": [4950, 5900, 7700, 9900, 13800], "Los Ríos": [5300, 6100, 8300, 10000, 14200], "Los Lagos": [5300, 6100, 8300, 10000, 14200], "Aysén": [8000, 9500, 14000, 21500, 28500], "Magallanes": [8000, 9500, 14000, 21500, 28500]}, "bluePunto": {"Arica y Parinacota": [6350, 7500, 11600, 16200, 24200], "Tarapacá": [5750, 6600, 9900, 14700, 22200], "Antofagasta": [5500, 6200, 9100, 13200, 20200], "Atacama": [4050, 5100, 6900, 9100, 13000], "Coquimbo": [3800, 4500, 6200, 8800, 12000], "Valparaíso": [3100, 3700, 5200, 6900, 8900], "Metropolitana de Santiago": [2300, 2850, 3900, 4900, 6800], "O'Higgins": [3200, 4000, 5600, 7500, 10500], "Maule": [3400, 4400, 5900, 8100, 11300], "Ñuble": [3800, 4600, 6400, 8400, 11800], "Bío-Bío": [3900, 4900, 6500, 8700, 12000], "Araucanía": [4150, 5100, 6900, 9100, 13000], "Los Ríos": [4500, 5300, 7500, 9200, 13400], "Los Lagos": [4500, 5300, 7500, 9200, 13400], "Aysén": [7200, 8700, 13200, 20700, 27700], "Magallanes": [7200, 8700, 13200, 20700, 27700]}, "lg": {"ARICA": [8900, 10600, 19900, 29700, 500], "IQUIQUE": [6900, 8300, 17000, 25300, 500], "CALAMA": [5700, 6900, 13600, 20700, 500], "ANTOFAGASTA": [5500, 6600, 10100, 16300, 500], "COPIAPO": [5100, 6100, 8900, 13900, 500], "LA SERENA": [4700, 5600, 8100, 12200, 500], "VALPARAISO": [4400, 5300, 5900, 10700, 500], "SANTIAGO": [2521, 2521, 2521, 2521, 250], "RANCAGUA": [4400, 5300, 5900, 10700, 500], "CURICO": [4400, 5300, 5900, 10700, 500], "TALCA": [4400, 5300, 5900, 10700, 500], "CHILLAN": [4700, 5600, 8100, 12200, 500], "CONCEPCION": [4700, 5600, 8100, 12200, 500], "LOS ANGELES": [4700, 5600, 8100, 12200, 500], "TEMUCO": [4800, 5800, 8500, 13300, 500], "VALDIVIA": [5100, 6100, 8900, 13900, 500], "OSORNO": [5100, 6100, 8900, 13900, 500], "PUERTO MONTT": [5300, 6400, 9900, 15200, 500], "COYHAIQUE": [8900, 10600, 19900, 29700, 500], "PUNTA ARENAS": [9000, 10800, 21100, 30100, 500]}, "regionNames": {"XV": "Arica y Parinacota", "I": "Tarapacá", "II": "Antofagasta", "III": "Atacama", "IV": "Coquimbo", "V": "Valparaíso", "RM": "Metropolitana de Santiago", "VI": "O'Higgins", "VII": "Maule", "VIII": "Bío-Bío / Ñuble", "IX": "Araucanía", "X": "Los Lagos", "XIV": "Los Ríos", "XI": "Aysén", "XII": "Magallanes"}, "regionHubs": {"XV": ["ARICA"], "I": ["IQUIQUE"], "II": ["ANTOFAGASTA", "CALAMA"], "III": ["COPIAPO"], "IV": ["LA SERENA"], "V": ["VALPARAISO"], "RM": ["SANTIAGO"], "VI": ["RANCAGUA"], "VII": ["TALCA", "CURICO"], "VIII": ["CONCEPCION", "LOS ANGELES"], "IX": ["TEMUCO"], "X": ["OSORNO", "PUERTO MONTT"], "XIV": ["VALDIVIA"], "XI": ["COYHAIQUE"], "XII": ["PUNTA ARENAS"]}, "nubleComunas": ["CHILLAN", "CHILLAN VIEJO", "BULNES", "COBQUECURA", "COELEMU", "COIHUECO", "EL CARMEN CHILLAN", "NINHUE", "NIQUEN", "PEMUCO", "PINTO", "PORTEZUELO", "QUILLON", "QUIRIHUE", "RANQUIL", "SAN CARLOS", "SAN FABIAN", "SAN IGNACIO", "SAN NICOLAS", "TREGUACO", "YUNGAY"], "granSantiagoExtra": ["CERRILLOS", "CERRO NAVIA", "CONCHALI", "EL BOSQUE", "ESTACION CENTRAL", "HUECHURABA", "INDEPENDENCIA", "LA CISTERNA", "LA FLORIDA", "LA GRANJA", "LA PINTANA", "LA REINA", "LAS CONDES", "LO BARNECHEA", "LO ESPEJO", "LO PRADO", "MACUL", "MAIPU", "NUNOA", "PEDRO AGUIRRE CERDA", "PENALOLEN", "PROVIDENCIA", "PUDAHUEL", "QUILICURA", "QUINTA NORMAL", "RECOLETA", "RENCA", "SAN JOAQUIN", "SAN MIGUEL", "SAN RAMON", "VITACURA", "PUENTE ALTO", "SAN BERNARDO"]};
+let DATA = JSON.parse(JSON.stringify(ORIGINAL_DATA));
+const PRODUCT_CATALOG = [{"title": "Gel Cucarachas Cucaxan (6 g)", "weight_kg": 0.0, "l": 13.0, "a": 3.0, "h": 1.0}, {"title": "Capacitación Profesional: Control Palomas (25 agosto)", "weight_kg": 0.0, "l": null, "a": null, "h": null}, {"title": "Pack 72 Trampas Pegajosa Adhesiva  ProTrap Mouse", "weight_kg": 2.0, "l": null, "a": null, "h": null}, {"title": "Capacitación 20 agosto", "weight_kg": 0.0, "l": null, "a": null, "h": null}, {"title": "Arriendo Lámpara UV Atrapa Insectos", "weight_kg": 3.0, "l": 48.0, "a": 23.0, "h": 15.0}, {"title": "Repelente Ultrasónico para Roedores | Zecto Eléctrico Anasac", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Repelente de Roedores 5 Litros  | No Tóxico para Mascotas", "weight_kg": 1.0, "l": 25.0, "a": 13.0, "h": 20.0}, {"title": "Kit Malla Nylon Protección ProTrap®", "weight_kg": 1.0, "l": 1.0, "a": 1.0, "h": 2.0}, {"title": "Raticida Patrol Mini Bloque 3Kg", "weight_kg": 5.0, "l": 20.0, "a": 20.0, "h": 20.0}, {"title": "Klerat Veneno Roedores Bloque 1 kg Control Agricola (Bloques de 20g)", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Pack 10 Tubo Cebadero Y 10 Trampa Adhesiva", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Pack 5 Pulsera Repelente De Zancudos Y Mosquitos", "weight_kg": 0.2, "l": null, "a": null, "h": null}, {"title": "Pack Veneno Cebo Klerat + 10 Cajas Cebaderas Ratox Light", "weight_kg": 2.0, "l": 22.2, "a": 16.9, "h": 15.0}, {"title": "Pack 5 Cajas Portacebo con Llave + Bloques de Veneno 100g", "weight_kg": 2.0, "l": 22.0, "a": 17.0, "h": 8.0}, {"title": "Pack 10 Cajas Portacebo con Llave + Bloques de Veneno 100g", "weight_kg": 2.0, "l": 22.0, "a": 17.0, "h": 8.0}, {"title": "Pack Malla Nylon 0.8mm (Desde 5-10 unidades)", "weight_kg": 60.0, "l": 10.0, "a": 100.0, "h": 7.0}, {"title": "Pack Malla Nylon Seguridad 0,7mm (Desde 5-10 unidades)", "weight_kg": 60.0, "l": 10.0, "a": 100.0, "h": 7.0}, {"title": "Angulo Para Malla Seguridad (13x13mm x 2mts)", "weight_kg": 0.3, "l": 5.0, "a": 5.0, "h": 200.0}, {"title": "Pack 5 Estaciones Pegajosas Control Insectos IMS + recarga láminas", "weight_kg": 0.3, "l": 10.0, "a": 9.0, "h": 2.0}, {"title": "Calafatera Básica", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "BLATTANEX GEL CUCARACHAS (10 GR) Envu", "weight_kg": 0.2, "l": 15.0, "a": 3.0, "h": 2.0}, {"title": "MOSQUICIDA MAXFORCE FLY SPOT BAIT WG (250 GR) ENVU + Brocha", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "MAXFORCE FORTE JERINGA (30 GR) ENVU", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "RODILON BLOQUE EXTRUSADO (1 KG) ENVU", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "RACUMIN POLVO (1 KG) ENVU", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "TEMPRID SC (250 CC) Envu", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Atrayente ratones Tenta Virtual Pasta 100g", "weight_kg": 0.3, "l": 14.0, "a": 11.0, "h": 5.0}, {"title": "Fijaciones Cuadrado Malla ACMA Galvanizada", "weight_kg": 0.2, "l": 55.0, "a": 35.0, "h": 8.0}, {"title": "Pack 6 Cajas Cebaderas con llave + laminas pegajosas", "weight_kg": 2.0, "l": 28.0, "a": 16.0, "h": 10.0}, {"title": "Repelente conejo SL 250cc ANASAC", "weight_kg": 1.0, "l": 13.0, "a": 7.0, "h": 7.0}, {"title": "5 Ratox Light + 5 Sachets Veneno Pellet Klerat", "weight_kg": 1.5, "l": 22.0, "a": 16.0, "h": 8.0}, {"title": "Láminas pegajosas IMS para insectos (10 unidades)", "weight_kg": 0.3, "l": 8.0, "a": 6.0, "h": 10.0}, {"title": "Estación para láminas pegajosas IMS", "weight_kg": 0.3, "l": 10.0, "a": 9.0, "h": 2.0}, {"title": "Atrayente Roedores TENTA Rat Spray 500 CC", "weight_kg": 1.0, "l": 24.0, "a": 7.0, "h": 7.0}, {"title": "Atrayente Roedores TENTA MasterBalls 400g", "weight_kg": 0.5, "l": 14.0, "a": 8.0, "h": 8.0}, {"title": "Dryquat 1 Litro - Amonio Cuaternario con dispensador", "weight_kg": 1.0, "l": 25.0, "a": 10.0, "h": 10.0}, {"title": "Tubo ultravioleta UV 15W Economico", "weight_kg": 0.4, "l": null, "a": null, "h": null}, {"title": "Pack 12 Insecticidas Cyperkill 25 Ec 1lt Anasac", "weight_kg": 12.0, "l": 12.0, "a": 40.0, "h": 30.0}, {"title": "Tubo LED ultravioleta UV 6W", "weight_kg": 0.4, "l": 43.6, "a": 2.5, "h": 2.5}, {"title": "Lámpara UV LED 6W FLYTRAP - Captura continua de insectos voladores", "weight_kg": 3.0, "l": 45.0, "a": 20.0, "h": 20.0}, {"title": "50 Cajas cebaderas Ratox Light + 50 Sachets veneno Klerat", "weight_kg": 7.0, "l": 22.0, "a": 16.0, "h": 8.0}, {"title": "Estación de Monitoreo de Pared para Termita Subterránea – PROTRAP", "weight_kg": 1.0, "l": 15.0, "a": 8.0, "h": 4.0}, {"title": "Fumixan Pro Pote 120g", "weight_kg": 0.4, "l": 7.0, "a": 8.0, "h": 1.0}, {"title": "Insecticida Chemotrina EC", "weight_kg": 1.0, "l": 12.0, "a": 6.0, "h": 8.0}, {"title": "Erradic Fly - Trampa Ecológica Moscas", "weight_kg": 1.0, "l": 20.0, "a": 15.0, "h": 18.0}, {"title": "Insecticida Sipertrin 5 SC", "weight_kg": 1.0, "l": 12.0, "a": 8.0, "h": 6.0}, {"title": "Insecticida Depe 10 EC", "weight_kg": 1.0, "l": 12.0, "a": 6.0, "h": 8.0}, {"title": "Insecticida Proteginal Ec", "weight_kg": 1.0, "l": 12.0, "a": 6.0, "h": 6.0}, {"title": "Platinum Gel Cucaracha 30 gr", "weight_kg": 0.3, "l": 15.0, "a": 5.0, "h": 5.0}, {"title": "Espuma expansiva de poliuretano 750cc - Para Roedores y Insectos", "weight_kg": 0.5, "l": 30.0, "a": 7.0, "h": 7.0}, {"title": "Recarga Cebo para Moscas Eco Anasac", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Anasect 2.5 Ec (1 Lt) Anasac", "weight_kg": 1.0, "l": 24.0, "a": 10.0, "h": 10.0}, {"title": "Pack Veneno Tabanos & Coliguacho ProTrap - EasyPest", "weight_kg": 0.3, "l": 32.0, "a": 8.0, "h": 13.0}, {"title": "Veloxan Derrivante 60ml", "weight_kg": 0.6, "l": 10.0, "a": 5.0, "h": 4.0}, {"title": "Pack Veneno Avispas ProTrap - EasyPest", "weight_kg": 0.3, "l": 32.0, "a": 8.0, "h": 13.0}, {"title": "Pack 4 Advion Gel Cucaracha (Total 120g)", "weight_kg": 0.7, "l": 10.0, "a": 10.0, "h": 5.0}, {"title": "Kit Anti Chinches de Cama PRO", "weight_kg": 1.0, "l": 15.0, "a": 15.0, "h": 15.0}, {"title": "Insecticida Stockade CS 1 Lt", "weight_kg": 1.0, "l": 10.0, "a": 8.0, "h": 6.0}, {"title": "Repelente Aves Rotor Pro - Reflector Giratorio", "weight_kg": 2.0, "l": 35.0, "a": 35.0, "h": 25.0}, {"title": "Pack 12 Aerosol Descarga Total 150cc", "weight_kg": 2.0, "l": null, "a": null, "h": null}, {"title": "Pack 12 Fumixan Fog Bombona 400 cc – Con válvula de descarga total", "weight_kg": 3.9, "l": null, "a": null, "h": null}, {"title": "Pack 12 Fumixan Fog Aerosol 120 cc – Con válvula de descarga total", "weight_kg": 9.0, "l": null, "a": null, "h": null}, {"title": "Pack 12 Fumixan Pro Tableta 50gr", "weight_kg": 0.9, "l": null, "a": null, "h": null}, {"title": "Láminas Adhesivas ProTrap UV - Pack 50", "weight_kg": 3.0, "l": null, "a": null, "h": null}, {"title": "Mega Pack 50 Trampas Adehsivas Para Polillas", "weight_kg": 0.6, "l": null, "a": null, "h": null}, {"title": "Insecticida Hormigas Zecto Cebo Granulado", "weight_kg": 0.5, "l": 8.0, "a": 5.0, "h": 6.0}, {"title": "Kit Verano Familia:  Repelentes Zancudos / Mosquitos / Polillas", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Pulverizador Manual Jacto PJ-16", "weight_kg": 5.0, "l": 54.0, "a": 16.0, "h": 35.0}, {"title": "EasyPest – Kit Antinsectos Reutilizable (Incluye Pulverizador + Insecticida)", "weight_kg": 2.0, "l": 32.0, "a": 8.0, "h": 13.0}, {"title": "Repelente Ultrasónico Moquitos - Diamond Bell", "weight_kg": 0.045, "l": 6.0, "a": 6.0, "h": 6.0}, {"title": "Repelente Ultrasónico PRO - Ratones, Cucarachas y Murcielagos", "weight_kg": 1.0, "l": 12.0, "a": 6.0, "h": 12.0}, {"title": "Repelente Ratones y Cucarachas Ultrasónico - Diamond Bell", "weight_kg": 0.045, "l": 8.0, "a": 7.5, "h": 7.5}, {"title": "Fly Monster Trampa Moscas", "weight_kg": 2.0, "l": null, "a": null, "h": null}, {"title": "Pulsera Repelente Mosquitos y Zancudos Niño/a (WaterProof)", "weight_kg": 0.1, "l": null, "a": null, "h": null}, {"title": "Caja 50 Trampas Pegajosas PegRat", "weight_kg": 4.0, "l": 11.0, "a": 24.0, "h": 2.0}, {"title": "Trampa pegajosa PEGRAT pack 2 unid Control Up", "weight_kg": 0.7, "l": 11.0, "a": 24.0, "h": 2.0}, {"title": "Gel Repelente Antiposado De Palomas (240 G) Control Up", "weight_kg": 2.0, "l": null, "a": null, "h": null}, {"title": "Colet/Pulsera Repelente de Mosquitos", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Trampa Solar Led Para Avispas y Mosquitos", "weight_kg": 0.6, "l": 12.0, "a": 10.0, "h": 5.0}, {"title": "Zyrox Control de Mosca - Brocha de Regalo", "weight_kg": 0.5, "l": 25.0, "a": 8.0, "h": 8.0}, {"title": "Mega Kit Avispa Total 2.0 (24 Cebos)", "weight_kg": 4.1, "l": null, "a": null, "h": null}, {"title": "Pack Malla Nylon 06mm (Desde 5-10 unidades)", "weight_kg": 50.0, "l": null, "a": null, "h": null}, {"title": "50 Unidades Estación Monitoreo Termitas Subterraneas", "weight_kg": 5.0, "l": 23.0, "a": 15.0, "h": 5.5}, {"title": "Malla Nylon Invisible 5x100mts 0.9MM", "weight_kg": 53.0, "l": 110.0, "a": 70.0, "h": 70.0}, {"title": "Lámina Trampa Adhesiva Arod 23x42cm", "weight_kg": 8.0, "l": null, "a": null, "h": null}, {"title": "100 Unidades de Trampa de Golpe", "weight_kg": 10.0, "l": 14.0, "a": 7.0, "h": 55.0}, {"title": "100 Pinchos Base Policarbonato", "weight_kg": 8.0, "l": 50.0, "a": 10.0, "h": 11.0}, {"title": "Caja 50 unidades Ratox 4.1", "weight_kg": 12.0, "l": 28.0, "a": 16.0, "h": 10.0}, {"title": "Trampa de captura viva Roedores Pack 50 uni", "weight_kg": 20.0, "l": 110.0, "a": 32.0, "h": 50.0}, {"title": "100 Pinchos Galvanizados 1 mt lineal", "weight_kg": 30.0, "l": 100.0, "a": 26.0, "h": 12.0}, {"title": "Caja 50 Unidades Ratox Light", "weight_kg": 7.0, "l": 22.0, "a": 17.0, "h": 8.0}, {"title": "Pack 5 Cajas Cebaderas Ratox Light + 20 Bloques Veneno Klerat", "weight_kg": 0.8, "l": null, "a": null, "h": null}, {"title": "Enchufe Electrico Anti Zancudos, Moscas y Mosquitos", "weight_kg": 0.2, "l": null, "a": null, "h": null}, {"title": "Insecticida Aerosol Todo Insecto Sin Olor 500cc TANAX", "weight_kg": 0.6, "l": 27.0, "a": 5.0, "h": 7.0}, {"title": "Insecticida Polvo Todo Insecto 100grs TANAX", "weight_kg": 0.2, "l": null, "a": null, "h": null}, {"title": "Repelente Repelex NF 15% Aerosol 165cc", "weight_kg": 0.3, "l": 15.0, "a": 10.0, "h": 10.0}, {"title": "Balde Cebo Blando 5kg", "weight_kg": 5.0, "l": 30.0, "a": 28.0, "h": 25.0}, {"title": "Advion Gel Cucaracha 30g", "weight_kg": 0.4, "l": null, "a": null, "h": null}, {"title": "Insecticida Termitas Aerosol Zecto", "weight_kg": 0.6, "l": 29.0, "a": 6.0, "h": 6.0}, {"title": "Talon Bloque 1kg", "weight_kg": 1.0, "l": 15.0, "a": 15.0, "h": 25.0}, {"title": "Veneno Talon Bloque XT 4Kg", "weight_kg": 4.0, "l": 40.0, "a": 5.0, "h": 30.0}, {"title": "Cebo Adicional Avispa Total", "weight_kg": 0.3, "l": null, "a": null, "h": null}, {"title": "Veneno Ratones Talon Bloque 10kg", "weight_kg": 10.0, "l": null, "a": null, "h": null}, {"title": "Insecticida Klerat CS 30cc", "weight_kg": 0.3, "l": 8.0, "a": 5.0, "h": 5.0}, {"title": "Kit Avispa Total 2.0", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Triángulo cebadero T01", "weight_kg": 0.4, "l": null, "a": null, "h": null}, {"title": "Estación de Monitoreo para Termitas Subterráneas – PRO TRAP", "weight_kg": 0.16, "l": 23.0, "a": 15.0, "h": 5.5}, {"title": "Red De Niebla para Aves", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Malla Nylon Invisible 10x100mts 0.8MM", "weight_kg": 15.0, "l": 7.0, "a": 70.0, "h": 65.0}, {"title": "Malla Seguridad Nylon 0.7MM 10x100mts  Fortune Net", "weight_kg": 12.0, "l": 7.0, "a": 70.0, "h": 65.0}, {"title": "Malla Nylon Monofilamento 0.7mm 30MD x 143mts (trabajada 2x100mts)", "weight_kg": 5.0, "l": null, "a": null, "h": null}, {"title": "Pulverizador Manual a Presión SOLO Modelo 461 – 5 litros", "weight_kg": 1.5, "l": null, "a": null, "h": null}, {"title": "Cinta reflectante repelente de aves 4,5 cm x 100 m", "weight_kg": 0.3, "l": null, "a": null, "h": null}, {"title": "Búho Anti Aves Espanta Plagas", "weight_kg": 1.0, "l": 20.0, "a": 10.0, "h": 10.0}, {"title": "Búho Repelente de aves con sonido", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Pistola Calafatera para pegado de puas antiaves", "weight_kg": 1.5, "l": 50.0, "a": 20.0, "h": 6.0}, {"title": "Angulo Perforado 15x15mm x 2mts", "weight_kg": 0.3, "l": 5.0, "a": 5.0, "h": 200.0}, {"title": "Resorte Espiral Disuasión Para Palomas", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Pinchos y puas Antipaloma Alambre Galvanizado 1mt", "weight_kg": 0.3, "l": 100.0, "a": 23.0, "h": 12.0}, {"title": "Trampa de ratones para balde", "weight_kg": 0.5, "l": 31.0, "a": 31.0, "h": 9.0}, {"title": "Caja Porta Cebo para Roedores Ratox 4.1", "weight_kg": 0.2, "l": 28.0, "a": 16.0, "h": 10.0}, {"title": "Caja Porta Cebo para Roedores Ratox Light", "weight_kg": 0.2, "l": 22.0, "a": 16.0, "h": 8.0}, {"title": "Raticida Patrol Pasta 5Kg", "weight_kg": 5.0, "l": 30.0, "a": 28.0, "h": 25.0}, {"title": "Trampa Ratones Tubo Cebadero Cónico (unidad)", "weight_kg": 0.1, "l": 95.0, "a": 8.0, "h": 25.0}, {"title": "Fly Trap - Trampa para moscas", "weight_kg": 0.4, "l": 25.0, "a": 20.0, "h": 5.0}, {"title": "Optigard Gel Veneno Hormigas 30 Gr", "weight_kg": 0.3, "l": null, "a": null, "h": null}, {"title": "Fumixan Fog Aerosol Fumigador – Con válvula de descarga total", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Fumixan Pro NF Tableta 50gr", "weight_kg": 0.4, "l": null, "a": null, "h": null}, {"title": "Insecticida Arañas Listo Para Usar Zecto 500 cc", "weight_kg": 0.6, "l": null, "a": null, "h": null}, {"title": "Vespugard 1,5 – Cebo para Avispa Chaqueta Amarilla", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Bell Max Cucarachicida Gel 6gr", "weight_kg": 0.2, "l": null, "a": null, "h": null}, {"title": "Stuka Max 1 lt", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Plumero Aplicador Pera Polvo Pesticida Acido Borico", "weight_kg": 0.6, "l": 32.0, "a": 5.0, "h": 5.0}, {"title": "Cucarachicida en Polvo Ácido Bórico 5kg", "weight_kg": 5.0, "l": 30.0, "a": 28.0, "h": 25.0}, {"title": "Insecticida Aerosol Descarga Total 150cc", "weight_kg": 0.2, "l": null, "a": null, "h": null}, {"title": "Malla Nylon Invisible 7×70mts 0.35MM (Rombo Pequeño)", "weight_kg": 7.0, "l": null, "a": null, "h": null}, {"title": "Pack 50 Tubos Cebaderos + 50 Bloques Veneno Rastop + Alambres", "weight_kg": 4.1, "l": 60.0, "a": 30.0, "h": 30.0}, {"title": "Pack Antipalomas: Pinchos Galvanizados + Adhesivos + Calafatera", "weight_kg": 3.0, "l": 1.0, "a": 100.0, "h": 27.0}, {"title": "Pack Roedores: 2 Caja Cebadera Ratox 4.1 + veneno + 2 Trampa Golpe + 2 Pegajosas", "weight_kg": 2.0, "l": null, "a": null, "h": null}, {"title": "Malla Nylon 10x100mts 0.6MM", "weight_kg": 8.0, "l": 7.0, "a": 70.0, "h": 65.0}, {"title": "Kit Desratización: 10 Tubos Cebaderos + Veneno + Guantes + Mascarilla + Instructivos", "weight_kg": 2.0, "l": null, "a": null, "h": null}, {"title": "Pack Exteriores: 12 Cajas Ratox Light + 50 Bloques Veneno", "weight_kg": 2.0, "l": 22.0, "a": 17.0, "h": 8.0}, {"title": "Pack Interiores: 4 Cajas Ratox Light con Stickers + 20 Sachets Veneno Pellet", "weight_kg": 1.0, "l": 22.0, "a": 17.0, "h": 8.0}, {"title": "Pack 15 Tubos Cebaderos + 25 Bloques de Veneno Klerat", "weight_kg": 2.0, "l": null, "a": null, "h": null}, {"title": "Pack 10 Cajas Cebaderas Ratox Light + 50 Sachets Pasta Veneno Klerat", "weight_kg": 2.0, "l": 22.0, "a": 16.0, "h": 8.0}, {"title": "Pack 4 Cajas Ratox Light con Stickers + 50 Sachets Veneno Pellet Klerat", "weight_kg": 1.0, "l": 22.0, "a": 16.0, "h": 8.0}, {"title": "Pack 5 Trampas De Golpe T-rex Grande 14x7cm", "weight_kg": 0.6, "l": null, "a": null, "h": null}, {"title": "Repelente Aves Ahuyentador Sonico de Aves", "weight_kg": 2.0, "l": 15.0, "a": 23.0, "h": 10.0}, {"title": "Ahuyentador Sónico y Ultrasónico de Aves – 4 Parlantes", "weight_kg": 3.5, "l": 23.0, "a": 20.0, "h": 13.0}, {"title": "Nebulizador fumigador ULV eléctrico 10L  – Guskiner", "weight_kg": 6.0, "l": null, "a": null, "h": null}, {"title": "Pulverizador Manual Jacto PJ-16u (Con sellos de Viton)", "weight_kg": 5.0, "l": 54.0, "a": 16.0, "h": 35.0}, {"title": "Pulverizador Manual SOLO Modelo 404 – 2 Litros", "weight_kg": 0.7, "l": null, "a": null, "h": null}, {"title": "Jaula Captura Tamaño L (Plegable)", "weight_kg": 19.0, "l": 53.0, "a": 50.0, "h": 150.0}, {"title": "Jaula Captura Tamaño M (Plegable)", "weight_kg": 5.2, "l": 94.0, "a": 36.0, "h": 34.0}, {"title": "Jaula Captura Tamaño S (Plegable)", "weight_kg": 3.8, "l": 33.0, "a": 28.0, "h": 79.0}, {"title": "Pack Repelente Aves: Gel antiposado + Cinta Reflectante", "weight_kg": 0.6, "l": null, "a": null, "h": null}, {"title": "Adhesivo Sellador de Poliuretano 300ml para puas antipaloma", "weight_kg": 0.4, "l": null, "a": null, "h": null}, {"title": "Adhesivo de Poliuretano 600ml para púas antipaloma", "weight_kg": 0.6, "l": null, "a": null, "h": null}, {"title": "Puas Antipaloma Base Policarbonato", "weight_kg": 0.2, "l": 50.0, "a": 10.0, "h": 11.0}, {"title": "Trampa pegajosa COLLY RATO pack 2 unid", "weight_kg": 0.6, "l": null, "a": null, "h": null}, {"title": "Repelente BT Stop Conejos Granulado 750 grs", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Repelente BT Stop Conejos", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Repelente BT Stop Roedores", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Trampa Pegajosa Adhesiva ProTrap Mouse", "weight_kg": 0.2, "l": null, "a": null, "h": null}, {"title": "Trampa de captura viva Roedores", "weight_kg": 0.4, "l": 30.0, "a": 10.0, "h": 10.0}, {"title": "Raticida Murin Forte Bloques 500gr", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Raticida Murin Pasta 500G", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Ratador Bloque 10kg", "weight_kg": 10.0, "l": 50.0, "a": 30.0, "h": 30.0}, {"title": "Klerat Mini Bloque 1kg (Bloques de 5g)", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Klerat Bloque", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Klerat Pellet 500 gr", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Klerat Cebo Blando (Pasta)", "weight_kg": 0.2, "l": null, "a": null, "h": null}, {"title": "Raticida Detia Plus Cebo Fresco 5kg (A Pedido)", "weight_kg": 5.0, "l": 30.0, "a": 28.0, "h": 25.0}, {"title": "Raticida Detia Plus Mini Bloque 10kg", "weight_kg": 10.0, "l": null, "a": null, "h": null}, {"title": "Raticida Detia Plus Tableta 12,5Kg  (A Pedido)", "weight_kg": 12.5, "l": null, "a": null, "h": null}, {"title": "Rastop Molienda Toffee 5 kg", "weight_kg": 5.0, "l": 30.0, "a": 28.0, "h": 25.0}, {"title": "Rodenticida Rastop Mini Bloque", "weight_kg": 0.3, "l": null, "a": null, "h": null}, {"title": "Rodenticida Rastop Pasta", "weight_kg": 0.2, "l": null, "a": null, "h": null}, {"title": "Rodenticida Rastop Pellet", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Respirador MASPROT M 1.2 SkyBlue Talla M", "weight_kg": 0.8, "l": null, "a": null, "h": null}, {"title": "Repelente Aves 2% 1lt", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Repelente Aves 40 SO (40%)", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Lámina Adhesiva ProTrap UV 44x22cm", "weight_kg": 0.3, "l": null, "a": null, "h": null}, {"title": "Lámpara UV PB15 - Captura continua de insectos voladores", "weight_kg": 3.0, "l": 48.0, "a": 23.0, "h": 15.0}, {"title": "Trampa Adhesiva con Feromonas para Polillas de Despensa", "weight_kg": 0.2, "l": null, "a": null, "h": null}, {"title": "Klerat Gel Hormigas 10g", "weight_kg": 0.3, "l": null, "a": null, "h": null}, {"title": "Optigard LT 20gr", "weight_kg": 0.3, "l": 13.0, "a": 0.5, "h": 19.0}, {"title": "Demand 2.5 CS", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Demon TC 25 1lt con Dosificador", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Glacoxan – Fiprofeno 1 litro", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Insecticida Premium Flo 6 SC 1 lt", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Insecticida Premium 10 EC 1lt", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Bioenzima Bioseptic 100 grs", "weight_kg": 0.2, "l": null, "a": null, "h": null}, {"title": "Desinfectante BT Quat 1 lt", "weight_kg": 1.0, "l": 10.0, "a": 8.0, "h": 5.0}, {"title": "Jeringa Forzamix 35 Grs. Con Émbolo", "weight_kg": 0.2, "l": null, "a": null, "h": null}, {"title": "Insecticida Delta 25 WP 50 grs", "weight_kg": 0.3, "l": null, "a": null, "h": null}, {"title": "Insecticida Ciper 25 EC 1 Lt", "weight_kg": 1.0, "l": 10.0, "a": 8.0, "h": 5.0}, {"title": "Insecticida BTFLY 25 E.M. 1 Lt", "weight_kg": 1.0, "l": 12.0, "a": 8.0, "h": 5.0}, {"title": "Larvicida Kilarvol 2 EC 1lt", "weight_kg": 1.0, "l": 12.0, "a": 8.0, "h": 7.0}, {"title": "Insecticida Lemonsol 1 lt", "weight_kg": 1.0, "l": 12.0, "a": 8.0, "h": 5.0}, {"title": "AGITA 10 WG 250g con brocha de regalo", "weight_kg": 1.0, "l": 16.0, "a": 8.0, "h": 8.0}, {"title": "Insecticida Hormigas Listo Para Usar Zecto 500 cc", "weight_kg": 0.6, "l": null, "a": null, "h": null}, {"title": "Insecticida Bell Plus 30gr", "weight_kg": 0.2, "l": null, "a": null, "h": null}, {"title": "Insecticida Spee 3 EW 1lt", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Permasect 25 EC 1 lt", "weight_kg": 1.0, "l": 13.0, "a": 8.0, "h": 7.0}, {"title": "Insecticida Mandra SC 1 lt", "weight_kg": 1.0, "l": 13.0, "a": 8.0, "h": 6.0}, {"title": "Insecticida Alpirix 1 lt", "weight_kg": 1.0, "l": 13.0, "a": 8.0, "h": 6.0}, {"title": "Spitfire 2,5 WP", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Larvicida en Polvo Rush Max 250 grs", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Muscacid SP 250gr", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Insecticida en Polvo Hawker Plus 250 grs", "weight_kg": 0.3, "l": 15.0, "a": 10.0, "h": 10.0}, {"title": "Insecticida Espuma Avro", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Insecticida líquido Aquatrin 2,5 SC 1 lt", "weight_kg": 1.0, "l": 15.0, "a": 10.0, "h": 10.0}, {"title": "Insecticida líquido Atonit 2,5 EC 1 lt", "weight_kg": 1.0, "l": 15.0, "a": 10.0, "h": 5.0}, {"title": "Insecticida líquido Cyperkill Max 1 lt", "weight_kg": 1.0, "l": 15.0, "a": 10.0, "h": 6.0}, {"title": "Insecticida líquido Cyperkill Plus", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Insecticida líquido Cyperkill 25 EC", "weight_kg": 1.0, "l": null, "a": null, "h": null}, {"title": "Clavo Tipo Hilti SDM para Concreto 2\" Para Deratizacion (Caja 100u)", "weight_kg": 0.6, "l": null, "a": null, "h": null}, {"title": "Hilo de Nylon 0.6mm 100mts para malla", "weight_kg": 0.3, "l": null, "a": null, "h": null}, {"title": "Sticker Tubo Cebadero", "weight_kg": 0.1, "l": null, "a": null, "h": null}, {"title": "Respirador M 1.2 SkyBlue + Filtro MGV1A C/Gases y Vapores Orgánicos", "weight_kg": 0.6, "l": null, "a": null, "h": null}, {"title": "Filtro MGV1A C/Gases y Vapores Orgánicos (PAR) – Para resp SkyBlue", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Filtro MGV/MHE-500 Gases, Vapores y Particulas (PAR)- Para Full Face", "weight_kg": 0.5, "l": null, "a": null, "h": null}, {"title": "Buzo Protector Desechable – Overol", "weight_kg": 0.3, "l": null, "a": null, "h": null}, {"title": "Tubo ultravioleta UV 15W Inastillable", "weight_kg": 0.4, "l": null, "a": null, "h": null}];
+
+const STORAGE_KEY = 'cotizador-envios-rates-v1';
+
+// ---------- storage helpers (localStorage, funciona sin cuenta / sin servidor) ----------
+function loadSavedRates(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const saved = JSON.parse(raw);
+      if(saved.blueDomicilio) DATA.blueDomicilio = saved.blueDomicilio;
+      if(saved.bluePunto) DATA.bluePunto = saved.bluePunto;
+      if(saved.lg) DATA.lg = saved.lg;
+    }
+  }catch(e){ /* no saved rates yet, or localStorage no disponible */ }
+}
+function saveRates(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      blueDomicilio: DATA.blueDomicilio, bluePunto: DATA.bluePunto, lg: DATA.lg
+    }));
+    document.getElementById('rateSaveMsg').textContent = 'Guardado en este navegador ✓';
+    setTimeout(()=>document.getElementById('rateSaveMsg').textContent='',2500);
+  }catch(e){
+    document.getElementById('rateSaveMsg').textContent = 'No se pudo guardar (¿navegador en modo privado?).';
+  }
+}
+function resetRates(){
+  DATA.blueDomicilio = JSON.parse(JSON.stringify(ORIGINAL_DATA.blueDomicilio));
+  DATA.bluePunto = JSON.parse(JSON.stringify(ORIGINAL_DATA.bluePunto));
+  DATA.lg = JSON.parse(JSON.stringify(ORIGINAL_DATA.lg));
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  buildRateEditor();
+  computeAndRender();
+}
+
+// ---------- state ----------
+let selectedStarkenRow = null; // [region,comuna,b0..b4,p16,p100,extra]
+let shopifyProducts = PRODUCT_CATALOG.map((p,i)=>({id:i, title:p.title, weight_kg:p.weight_kg||0, l:p.l, a:p.a, h:p.h, qty:1, selected:false})); // precargado desde tu catálogo de Shopify
+
+// ---------- comuna search ----------
+const comunaInput = document.getElementById('comunaInput');
+const comunaResults = document.getElementById('comunaResults');
+comunaInput.addEventListener('input', ()=>{
+  const q = comunaInput.value.trim().toUpperCase();
+  comunaResults.innerHTML='';
+  if(q.length<2){ comunaResults.style.display='none'; return; }
+  const santiagoRow = DATA.starken.find(r=>r[0]==='RM' && r[1]==='SANTIAGO');
+  const directMatches = DATA.starken.filter(r => r[1].includes(q));
+  const extraMatches = DATA.granSantiagoExtra
+    .filter(name => name.includes(q))
+    .map(name => ['RM', name, ...santiagoRow.slice(2)]);
+  const matches = directMatches.concat(extraMatches).slice(0,30);
+  if(matches.length===0){ comunaResults.style.display='none'; return; }
+  matches.forEach(r=>{
+    const isExtra = r[0]==='RM' && DATA.granSantiagoExtra.includes(r[1]);
+    const div = document.createElement('div');
+    div.textContent = r[1] + '  —  Región ' + (DATA.regionNames[r[0]]||r[0]) + (isExtra ? ' (tarifa Santiago)' : '');
+    div.addEventListener('click', ()=>selectComuna(r));
+    comunaResults.appendChild(div);
+  });
+  comunaResults.style.display='block';
+});
+document.addEventListener('click', (e)=>{
+  if(!comunaResults.contains(e.target) && e.target!==comunaInput) comunaResults.style.display='none';
+});
+
+function nubleCheck(comuna){ return DATA.nubleComunas.includes(comuna); }
+
+function selectComuna(row){
+  selectedStarkenRow = row;
+  comunaInput.value='';
+  comunaResults.style.display='none';
+  const box = document.getElementById('selectedComuna');
+  box.style.display='block';
+  box.innerHTML = 'Destino: <b>'+row[1]+'</b> — Región '+(DATA.regionNames[row[0]]||row[0]);
+  setupHubAndBlue(row);
+  computeAndRender();
+}
+
+function setupHubAndBlue(row){
+  const code = row[0];
+  const comuna = row[1];
+  document.getElementById('hubRow').style.display='block';
+  let hubs = DATA.regionHubs[code] || ['SANTIAGO'];
+  let isNuble = (code==='VIII' && nubleCheck(comuna));
+  if(isNuble) hubs = ['CHILLAN'];
+  const hubSelect = document.getElementById('hubSelect');
+  const hubWrap = document.getElementById('hubSelectWrap');
+  hubSelect.innerHTML='';
+  hubs.forEach(h=>{
+    const opt = document.createElement('option');
+    opt.value = h; opt.textContent = h;
+    hubSelect.appendChild(opt);
+  });
+  hubWrap.style.display = hubs.length>1 ? 'block' : 'none';
+  document.getElementById('radioSelect').value = 'RU';
+}
+
+// ---------- weight / volumetric ----------
+function autoVolFromProducts(){
+  const selected = shopifyProducts.filter(p=>p.selected);
+  let vol = 0, missingDims = false;
+  selected.forEach(p=>{
+    if(p.l && p.a && p.h) vol += ((p.l*p.a*p.h)/4000)*p.qty;
+    else missingDims = true;
+  });
+  return {vol, missingDims, hasSelection: selected.length>0};
+}
+
+function currentWeightKg(){
+  const peso = parseFloat(document.getElementById('pesoTotal').value)||0;
+  const l = parseFloat(document.getElementById('largo').value)||0;
+  const a = parseFloat(document.getElementById('ancho').value)||0;
+  const h = parseFloat(document.getElementById('alto').value)||0;
+  const bultos = parseInt(document.getElementById('cantBultos').value)||1;
+  const manualVol = (l>0 && a>0 && h>0) ? ((l*a*h)/4000)*bultos : 0;
+  const auto = autoVolFromProducts();
+  const volKg = manualVol>0 ? manualVol : auto.vol;
+  return {peso, volKg, used: Math.max(peso, volKg), autoUsed: manualVol===0 && auto.vol>0, missingDims: auto.missingDims && auto.hasSelection && manualVol===0};
+}
+
+// ---------- pricing functions ----------
+function starkenPrice(row, w){
+  const [ ,,b0,b1,b2,b3,b4,p16,p100,extra] = row;
+  if(w<=0.85) return b0;
+  if(w<=3) return b1;
+  if(w<=6) return b2;
+  if(w<=10) return b3;
+  if(w<=15) return b4;
+  if(w<=16) return p16;
+  if(w<=100){
+    const rate = (p100-p16)/(100-16);
+    return p16 + rate*(w-16);
+  }
+  return p100 + extra*(w-100);
+}
+
+function blueBracketPrice(arr, w){
+  const [xs,s,m,l,xl] = arr;
+  if(w<=0.5) return xs;
+  if(w<=3) return s;
+  if(w<=6) return m;
+  if(w<=16) return l;
+  if(w<=25) return xl;
+  return xl + 350*(w-25);
+}
+
+function lgPrice(hubKey, w, radio){
+  const arr = DATA.lg[hubKey];
+  if(!arr) return null;
+  const [b0,b1,b2,b3,extra] = arr;
+  let price;
+  if(w<=3) price=b0;
+  else if(w<=10) price=b1;
+  else if(w<=25) price=b2;
+  else if(w<=50) price=b3;
+  else price = b3 + extra*(w-50);
+  if(radio==='FRU') price = price*1.5;
+  return price;
+}
+
+// ---------- render results ----------
+// ---------- separado (cada producto en su propio paquete) ----------
+function computeSeparadoTotals(blueTable, blueRegionKey, selectedRow, hubKeyEff, radio, applyIva, applyMarkup, MARKUP){
+  const selected = shopifyProducts.filter(p=>p.selected);
+  if(selected.length===0) return null;
+  let totalUnits=0, blueSum=0, starkenSum=0, lgSum=0;
+  let anyBlue=false, anyLg=false;
+  selected.forEach(p=>{
+    const qty = p.qty||1;
+    totalUnits += qty;
+    const w = Math.max(p.weight_kg||0, (p.l&&p.a&&p.h)?(p.l*p.a*p.h)/4000:0);
+
+    let sVal = starkenPrice(selectedRow, w);
+    if(applyIva) sVal *= 1.19;
+    starkenSum += sVal*qty;
+
+    if(blueTable[blueRegionKey]){
+      const bVal = blueBracketPrice(blueTable[blueRegionKey], w);
+      blueSum += bVal*qty;
+      anyBlue = true;
+    }
+
+    const lValRaw = lgPrice(hubKeyEff, w, radio);
+    if(lValRaw!=null){
+      let lVal = lValRaw;
+      if(applyIva) lVal *= 1.19;
+      lgSum += lVal*qty;
+      anyLg = true;
+    }
+  });
+  if(applyMarkup){
+    starkenSum += MARKUP*totalUnits;
+    if(anyBlue) blueSum += MARKUP*totalUnits;
+    if(anyLg) lgSum += MARKUP*totalUnits;
+  }
+  return {blue: anyBlue?blueSum:null, starken: starkenSum, lg: anyLg?lgSum:null, totalUnits};
+}
+
+function computeAndRender(){
+  const noResult = document.getElementById('noResult');
+  const grid = document.getElementById('resultsGrid');
+  if(!selectedStarkenRow){
+    noResult.style.display='block'; grid.style.display='none';
+    return;
+  }
+  noResult.style.display='none'; grid.style.display='grid';
+
+  const {peso, volKg, used, autoUsed, missingDims} = currentWeightKg();
+  let hint = 'Peso usado: '+used.toFixed(2)+' kg  (real '+peso.toFixed(2)+' kg'+(volKg>0?', volumétrico '+volKg.toFixed(2)+' kg'+(autoUsed?' — estimado automáticamente':' — medidas ingresadas'):'')+')';
+  if(missingDims) hint += ' · Algunos productos seleccionados no tienen medidas registradas y no se contaron en el volumétrico.';
+  document.getElementById('pesoUsadoHint').textContent = hint;
+
+  const applyIva = document.getElementById('ivaToggle').checked;
+  const code = selectedStarkenRow[0];
+  const comuna = selectedStarkenRow[1];
+  const isNuble = (code==='VIII' && nubleCheck(comuna));
+  const blueRegionKey = isNuble ? 'Ñuble' : (DATA.regionNames[code]==="Bío-Bío / Ñuble" ? 'Bío-Bío' : DATA.regionNames[code]);
+
+  let starkenVal = starkenPrice(selectedStarkenRow, used);
+  if(applyIva) starkenVal *= 1.19;
+
+  const modo = document.getElementById('blueModo').value;
+  const blueTable = modo==='domicilio' ? DATA.blueDomicilio : DATA.bluePunto;
+  let blueVal = blueTable[blueRegionKey] ? blueBracketPrice(blueTable[blueRegionKey], used) : null;
+
+  const hubSelect = document.getElementById('hubSelect');
+  const hubKey = hubSelect.value || (DATA.regionHubs[code]||['SANTIAGO'])[0];
+  const radio = document.getElementById('radioSelect').value;
+  let lgVal = lgPrice(isNuble ? 'CHILLAN' : hubKey, used, radio);
+  if(applyIva && lgVal!=null) lgVal *= 1.19;
+
+  const applyMarkup = document.getElementById('markupToggle').checked;
+  const MARKUP = 1500;
+  if(applyMarkup){
+    if(blueVal!=null) blueVal += MARKUP;
+    if(starkenVal!=null) starkenVal += MARKUP;
+    if(lgVal!=null) lgVal += MARKUP;
+  }
+  const markupNote = applyMarkup ? ' Incluye margen de $1.500.' : '';
+
+  const hubKeyEff = isNuble ? 'CHILLAN' : hubKey;
+  const separado = computeSeparadoTotals(blueTable, blueRegionKey, selectedStarkenRow, hubKeyEff, radio, applyIva, applyMarkup, MARKUP);
+  const showSeparado = separado && separado.totalUnits>1;
+
+  const cards = [
+    {name:'Blue Express', modo: (modo==='domicilio'?'Entrega a domicilio':'Retiro en punto'), val: blueVal, separadoVal: separado?separado.blue:null, note:'Tarifario ya incluye IVA.'+markupNote},
+    {name:'Starken', modo:'Servicio Normal (terrestre)', val: starkenVal, separadoVal: separado?separado.starken:null, note: (used>15 ? 'Sobre 15 kg, tarifa interpolada desde el tarifario original.' : '')+markupNote},
+    {name:'L&G Solutions', modo:(hubKey||'')+' · '+(radio==='RU'?'Radio urbano':'Fuera de radio urbano'), val: lgVal, separadoVal: separado?separado.lg:null, note: (used>25 ? 'Pesos sobre 25 kg por bulto pueden requerir dividir el envío.' : '')+markupNote},
+  ];
+
+  const validVals = cards.filter(c=>c.val!=null).map(c=>c.val);
+  const minVal = validVals.length ? Math.min(...validVals) : null;
+
+  grid.innerHTML='';
+  cards.forEach(c=>{
+    const div = document.createElement('div');
+    div.className = 'courier-card' + (c.val===minVal && minVal!=null ? ' winner' : '');
+    let separadoHtml = '';
+    if(showSeparado && c.separadoVal!=null){
+      const diff = c.separadoVal - (c.val||0);
+      const diffText = diff>0.5 ? ' · ahorras $'+Math.round(diff).toLocaleString('es-CL')+' enviando junto' : (diff<-0.5 ? ' · enviar junto sale $'+Math.round(-diff).toLocaleString('es-CL')+' más caro' : '');
+      separadoHtml = `<div class="courier-note">Por separado (${separado.totalUnits} paquetes, c/u el suyo): $${Math.round(c.separadoVal).toLocaleString('es-CL')}${diffText}</div>`;
+    }
+    div.innerHTML = `
+      <div class="courier-name">${c.name}</div>
+      <div class="courier-modo">${c.modo}</div>
+      <div class="courier-price">${c.val!=null ? '$'+Math.round(c.val).toLocaleString('es-CL') : 'No disponible'}</div>
+      <div class="courier-note">Todo junto (1 envío)${c.note?' · '+c.note:''}</div>
+      ${separadoHtml}
+    `;
+    grid.appendChild(div);
+  });
+}
+
+['pesoTotal','largo','ancho','alto','cantBultos','ivaToggle','markupToggle'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', computeAndRender);
+  document.getElementById(id).addEventListener('change', computeAndRender);
+});
+['hubSelect','radioSelect','blueModo'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', computeAndRender);
+});
+
+// ---------- rate editor ----------
+function buildRateEditor(){
+  const wrap = document.getElementById('rateEditor');
+  let html = '<div class="muted" style="margin-bottom:6px;">Valores en pesos chilenos, netos (Blue Express incluye IVA; L&amp;G no).</div>';
+  html += '<div style="overflow-x:auto;"><table class="rate-table"><thead><tr><th>Región</th><th>Blue · domicilio (XS/S/M/L/XL)</th><th>Blue · punto (XS/S/M/L/XL)</th></tr></thead><tbody>';
+  Object.keys(DATA.blueDomicilio).forEach(region=>{
+    html += `<tr>
+      <td>${region}</td>
+      <td>${DATA.blueDomicilio[region].map((v,i)=>`<input data-table="blueDomicilio" data-region="${region}" data-idx="${i}" type="number" value="${v}">`).join(' ')}</td>
+      <td>${DATA.bluePunto[region].map((v,i)=>`<input data-table="bluePunto" data-region="${region}" data-idx="${i}" type="number" value="${v}">`).join(' ')}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  html += '<div class="divider-label">L&amp;G Solutions — tarifa Radio Urbano (0-3/3-10/10-25/25-50/kg extra)</div>';
+  html += '<div style="overflow-x:auto;"><table class="rate-table"><thead><tr><th>Sucursal</th><th>Valores</th></tr></thead><tbody>';
+  Object.keys(DATA.lg).forEach(city=>{
+    html += `<tr><td>${city}</td><td>${DATA.lg[city].map((v,i)=>`<input data-table="lg" data-region="${city}" data-idx="${i}" type="number" value="${v}">`).join(' ')}</td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('change', (e)=>{
+      const t = e.target.dataset.table, r = e.target.dataset.region, i = parseInt(e.target.dataset.idx);
+      DATA[t][r][i] = parseFloat(e.target.value)||0;
+      computeAndRender();
+    });
+  });
+}
+document.getElementById('saveRates').addEventListener('click', saveRates);
+document.getElementById('resetRates').addEventListener('click', resetRates);
+
+// ---------- CSV import (reemplaza la conexión en vivo a Shopify) ----------
+document.getElementById('csvInput').addEventListener('change', handleCsvUpload);
+
+function parseCsvLine(line){
+  // parser simple que respeta comillas (formato estándar de exportación de Shopify)
+  const result = [];
+  let cur = '', inQuotes = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(inQuotes){
+      if(ch === '"'){
+        if(line[i+1] === '"'){ cur += '"'; i++; }
+        else inQuotes = false;
+      } else cur += ch;
+    } else {
+      if(ch === '"') inQuotes = true;
+      else if(ch === ','){ result.push(cur); cur=''; }
+      else cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+function handleCsvUpload(e){
+  const file = e.target.files[0];
+  const status = document.getElementById('csvStatus');
+  if(!file){ return; }
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    try{
+      const text = evt.target.result;
+      const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0);
+      const headers = parseCsvLine(lines[0]).map(h=>h.trim());
+      const titleIdx = headers.indexOf('Title');
+      const gramsIdx = headers.indexOf('Variant Grams');
+      if(titleIdx===-1){
+        status.textContent = 'No se encontró la columna "Title" en el CSV.';
+        return;
+      }
+      const rows = lines.slice(1).map(l=>parseCsvLine(l));
+      const products = [];
+      let lastTitle = '';
+      rows.forEach((cols,i)=>{
+        const title = cols[titleIdx] && cols[titleIdx].trim() ? cols[titleIdx].trim() : lastTitle;
+        if(cols[titleIdx] && cols[titleIdx].trim()) lastTitle = title;
+        const grams = gramsIdx!==-1 ? parseFloat(cols[gramsIdx]) : NaN;
+        if(!title) return;
+        products.push({id:i, title, weight_kg: isNaN(grams) ? 0 : grams/1000, qty:1, selected:false});
+      });
+      // de-duplicar por título, quedándonos con el primer peso encontrado
+      const seen = {};
+      shopifyProducts = products.filter(p=>{
+        if(seen[p.title]) return false;
+        seen[p.title] = true;
+        return true;
+      }).slice(0,200);
+      renderCart();
+      status.textContent = shopifyProducts.length + ' productos importados. Ahora puedes buscarlos arriba.';
+    }catch(err){
+      status.textContent = 'No se pudo leer el archivo. Revisa que sea el CSV exportado desde Shopify.';
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ---------- product search + cart ----------
+const prodSearch = document.getElementById('prodSearch');
+const prodResults = document.getElementById('prodResults');
+prodSearch.addEventListener('input', ()=>{
+  const q = prodSearch.value.trim().toUpperCase();
+  prodResults.innerHTML='';
+  if(q.length<2){ prodResults.style.display='none'; return; }
+  const matches = shopifyProducts.filter(p=>p.title.toUpperCase().includes(q)).slice(0,30);
+  if(matches.length===0){ prodResults.style.display='none'; return; }
+  matches.forEach(p=>{
+    const div = document.createElement('div');
+    const dims = (p.l && p.a && p.h) ? ` · ${p.l}x${p.a}x${p.h} cm` : '';
+    div.textContent = p.title + '  —  ' + (p.weight_kg ? p.weight_kg.toFixed(2)+' kg' : 'sin peso') + dims;
+    div.addEventListener('click', ()=>addProduct(p));
+    prodResults.appendChild(div);
+  });
+  prodResults.style.display='block';
+});
+document.addEventListener('click', (e)=>{
+  if(!prodResults.contains(e.target) && e.target!==prodSearch) prodResults.style.display='none';
+});
+
+function addProduct(p){
+  p.selected = true;
+  if(!p.qty || p.qty<1) p.qty = 1;
+  prodSearch.value='';
+  prodResults.style.display='none';
+  renderCart();
+  recalcPesoFromCart();
+}
+
+function removeProduct(id){
+  const p = shopifyProducts.find(x=>x.id==id);
+  if(p) p.selected = false;
+  renderCart();
+  recalcPesoFromCart();
+}
+
+function renderCart(){
+  const wrap = document.getElementById('cartWrap');
+  const tbody = document.getElementById('cartTbody');
+  const selected = shopifyProducts.filter(p=>p.selected);
+  tbody.innerHTML='';
+  if(selected.length===0){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  selected.forEach(p=>{
+    const tr = document.createElement('tr');
+    const dims = (p.l && p.a && p.h) ? `${p.l}x${p.a}x${p.h} cm` : 'sin medidas';
+    tr.innerHTML = `
+      <td>${p.title}<div class="muted">${dims}</div></td>
+      <td>${p.weight_kg ? p.weight_kg.toFixed(2)+' kg' : 'sin dato'}</td>
+      <td><input type="number" class="qty-input" data-id="${p.id}" value="${p.qty}" min="1"></td>
+      <td><button class="secondary tiny" data-id="${p.id}" data-action="remove">Quitar</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('.qty-input').forEach(inp=>inp.addEventListener('input', (e)=>{
+    const p = shopifyProducts.find(x=>x.id==e.target.dataset.id);
+    if(p) p.qty = parseInt(e.target.value)||1;
+    recalcPesoFromCart();
+  }));
+  tbody.querySelectorAll('[data-action="remove"]').forEach(btn=>btn.addEventListener('click', (e)=>removeProduct(e.target.dataset.id)));
+}
+
+function recalcPesoFromCart(){
+  const selected = shopifyProducts.filter(p=>p.selected);
+  const total = selected.reduce((sum,p)=>sum+(p.weight_kg*p.qty),0);
+  if(selected.length>0){
+    document.getElementById('pesoTotal').value = total.toFixed(2);
+  }
+  computeAndRender();
+}
+
+// ---------- init ----------
+(function init(){
+  loadSavedRates();
+  buildRateEditor();
+  renderCart();
+  computeAndRender();
+})();
+</script>
+</body>
+</html>
